@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>企業級 AI 服務平台 - AI Foundry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700&display=swap');
+
+        :root {
+            --brand-red: #D12329;
+            --brand-navy: #1a2b49;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        .nav-link {
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background-color: var(--brand-red);
+            transition: width 0.3s;
+        }
+
+        .nav-link.active::after {
+            width: 100%;
+        }
+
+        .nav-link.active {
+            color: var(--brand-red);
+        }
+
+        .laser-beam {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--brand-red), transparent);
+            box-shadow: 0 0 15px var(--brand-red);
+            z-index: 10;
+            display: none;
+            animation: scan 2s infinite ease-in-out;
+        }
+
+        @keyframes scan {
+            0% {
+                top: 0%;
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 1;
+            }
+
+            100% {
+                top: 100%;
+                opacity: 0;
+            }
+        }
+
+        .laser-active {
+            display: block !important;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-show {
+            display: flex !important;
+        }
+
+        /* Estimation type cards */
+        .est-card {
+            transition: transform 0.22s, box-shadow 0.22s, border-color 0.22s;
+        }
+
+        .est-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.10);
+            border-color: #D12329 !important;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-slate-800">
+
+    <!-- ═══════════════════════════════════════
+         NAV
+    ═══════════════════════════════════════ -->
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+
+        <!-- Top bar -->
+        <div
+            class="bg-[#1a2b49] text-white py-1.5 px-6 text-[11px] flex justify-end items-center space-x-6 tracking-wider">
+            <div class="relative group cursor-pointer">
+                <span class="hover:text-gray-300 transition flex items-center">
+                    加入我們
+                    <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </span>
+                <div
+                    class="hidden group-hover:block absolute right-0 mt-1 w-32 bg-white text-slate-800 shadow-xl border border-gray-100 z-[60]">
+                    <a href="join-supplier.html"
+                        class="block px-4 py-2 hover:bg-gray-50 hover:text-[#D12329] transition">供應商會員</a>
+                    <a href="join-buyer.html"
+                        class="block px-4 py-2 hover:bg-gray-50 hover:text-[#D12329] transition border-t border-gray-50">需求端會員</a>
+                </div>
+            </div>
+            <a href="#" class="hover:text-gray-300 transition">投資人關係</a>
+            <span class="text-gray-500">|</span>
+            <a href="#" class="text-[#D12329] font-bold">繁體中文</a>
+        </div>
+
+        <!-- Price ticker -->
+        <div class="bg-gray-100 border-b border-gray-200 px-6 py-1 flex items-center space-x-6">
+            <span class="text-[10px] font-bold text-[#D12329] animate-pulse">● LIVE PRICES (USD/g):</span>
+            <div id="price-ticker" class="flex space-x-8 text-[10px] font-mono text-slate-600"></div>
+        </div>
+
+        <!-- Main nav -->
+        <div class="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+            <div class="flex items-center space-x-10">
+                <div class="text-2xl font-black text-[#1a2b49] tracking-tighter">
+                    AI <span class="text-[#D12329]">FOUNDRY</span>
+                </div>
+                <div class="hidden md:flex space-x-8 text-sm font-bold text-slate-700 uppercase tracking-widest">
+                    <a href="#tech-overview" class="nav-link" onclick="UI.highlightNav(this)">技術概覽</a>
+                    <a href="#estimation" class="nav-link" onclick="UI.highlightNav(this)">精密估價</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ═══════════════════════════════════════
+         MAIN
+    ═══════════════════════════════════════ -->
+    <main class="py-16 px-4">
+
+        <!-- Tech Overview -->
+        <section id="tech-overview"
+            class="max-w-7xl mx-auto px-6 py-20 bg-white shadow-sm border border-gray-100 mb-20 rounded-sm">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-light tracking-tight text-[#1a2b49] mb-4">
+                    技術 <span class="font-bold text-[#D12329]">概覽</span>
+                </h2>
+                <p class="text-lg text-slate-600 max-w-3xl mx-auto">
+                    AI Foundry 整合 AI 精密估價、數位孿生建模與高階金屬加工技術。
+                </p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                <div class="group p-8 border border-gray-200 rounded-lg hover:border-[#D12329] transition-all">
+                    <div class="text-3xl font-light text-gray-200 group-hover:text-[#D12329]/30 mb-6 uppercase">AI
+                        Engine</div>
+                    <h3 class="text-2xl font-bold text-[#1a2b49] mb-4">即時成本分析</h3>
+                    <p class="text-gray-600 text-sm">結合全球金屬即時報價，支持藍圖 OCR 與規格雙模式輸入。</p>
+                </div>
+                <div class="group p-8 border border-gray-200 rounded-lg hover:border-[#D12329] transition-all">
+                    <div class="text-3xl font-light text-gray-200 group-hover:text-[#D12329]/30 mb-6 uppercase">Digital
+                        Twin</div>
+                    <h3 class="text-2xl font-bold text-[#1a2b49] mb-4">3D 虛擬原型</h3>
+                    <p class="text-gray-600 text-sm">自動從輸入尺寸生成 3D 模型，支援工法模擬與優化建議。</p>
+                </div>
+                <div class="group p-8 border border-gray-200 rounded-lg hover:border-[#D12329] transition-all">
+                    <div class="text-3xl font-light text-gray-200 group-hover:text-[#D12329]/30 mb-6 uppercase">Security
+                    </div>
+                    <h3 class="text-2xl font-bold text-[#1a2b49] mb-4">資料安全控制</h3>
+                    <p class="text-gray-600 text-sm">客戶端加密報價，確保資料隱私，提供從藍圖到量產的完整解決方案。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Estimation — Type Selection -->
+        <div id="estimation" class="max-w-6xl mx-auto px-6 mb-20">
+            <div class="mb-12">
+                <div class="w-12 h-1 bg-[#D12329] mb-6"></div>
+                <h1 class="text-4xl font-light tracking-tighter text-slate-900 uppercase mb-2">
+                    AI <span class="font-bold">Estimation</span>
+                </h1>
+                <p class="text-sm text-slate-400 uppercase tracking-widest">Step 01 — 選擇加工類型以進入估價系統</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                <!-- CNC -->
+                <div class="est-card group bg-white border-2 border-gray-100 p-8 rounded-sm cursor-pointer"
+                    onclick="window.location.href='ai-foundry/estimate-cnc.html'">
+                    <div
+                        class="text-5xl font-black text-gray-100 group-hover:text-[#D12329]/20 mb-5 transition-colors duration-300 uppercase tracking-tighter">
+                        01</div>
+                    <div class="w-6 h-0.5 bg-[#D12329] mb-5"></div>
+                    <h3 class="text-xl font-bold text-[#1a2b49] mb-3">CNC 加工</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed mb-6">
+                        精密銑削、車削、鑽孔工序。支援多材質、多工序，含切削工時自動計算。
+                    </p>
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1">鋁合金</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1">不鏽鋼</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1">碳鋼</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1">黃銅</span>
+                    </div>
+                    <div
+                        class="flex items-center justify-between text-xs font-bold text-slate-300 group-hover:text-[#D12329] uppercase tracking-wider transition-colors duration-200">
+                        <span>進入估價</span>
+                        <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- 鐵皮屋 -->
+                <div class="est-card group bg-white border-2 border-gray-100 p-8 rounded-sm cursor-pointer"
+                    onclick="window.location.href='ai-foundry/estimate-tin.html'">
+                    <div
+                        class="text-5xl font-black text-gray-100 group-hover:text-[#D12329]/20 mb-5 transition-colors duration-300 uppercase tracking-tighter">
+                        02</div>
+                    <div class="w-6 h-0.5 bg-[#D12329] mb-5"></div>
+                    <h3 class="text-xl font-bold text-[#1a2b49] mb-3">鐵皮屋</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed mb-6">
+                        廠房、倉庫、農業用鐵皮建築快速估價。依屋型、尺寸、材質自動計算工程費用。
+                    </p>
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1">鍍鋅板</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1">彩鋼板</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1">隔熱夾心板</span>
+                    </div>
+                    <div
+                        class="flex items-center justify-between text-xs font-bold text-slate-300 group-hover:text-[#D12329] uppercase tracking-wider transition-colors duration-200">
+                        <span>進入估價</span>
+                        <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- 客製化鐵製 -->
+                <div class="est-card group bg-white border-2 border-gray-100 p-8 rounded-sm cursor-pointer"
+                    onclick="window.location.href='ai-foundry/estimate-custom.html'">
+                    <div
+                        class="text-5xl font-black text-gray-100 group-hover:text-[#D12329]/20 mb-5 transition-colors duration-300 uppercase tracking-tighter">
+                        03</div>
+                    <div class="w-6 h-0.5 bg-[#D12329] mb-5"></div>
+                    <h3 class="text-xl font-bold text-[#1a2b49] mb-3">客製化鐵製加工</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed mb-6">
+                        焊接、折板、沖孔等板金加工。適用各種客製尺寸的一般鋼鐵製品。
+                    </p>
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1">SS400</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1">鍍鋅板</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1">白鐵 304</span>
+                    </div>
+                    <div
+                        class="flex items-center justify-between text-xs font-bold text-slate-300 group-hover:text-[#D12329] uppercase tracking-wider transition-colors duration-200">
+                        <span>進入估價</span>
+                        <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════
+         MODAL: 發布採購需求
+    ═══════════════════════════════════════ -->
+    <div id="request-modal" class="modal-overlay">
+        <div class="bg-white w-full max-w-md p-8 rounded-sm shadow-2xl relative">
+            <h2 class="text-xl font-bold text-[#1a2b49] mb-6 border-b pb-4">發布採購需求</h2>
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">期望完成時間</label>
+                    <input type="date" id="req-date"
+                        class="w-full border p-3 text-sm focus:border-[#D12329] outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">發布範圍</label>
+                    <select id="req-region" class="w-full border p-3 text-sm focus:border-[#D12329] outline-none">
+                        <option value="all">全台供應商</option>
+                        <option value="north">北部供應商（北北基桃竹宜）</option>
+                        <option value="central">中部供應商（苗中彰投雲）</option>
+                        <option value="south">南部供應商（嘉南高屏）</option>
+                        <option value="east">東部供應商（花東）</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">特殊備註</label>
+                    <textarea id="req-note" rows="4" placeholder="例如：需陽極處理..."
+                        class="w-full border p-3 text-sm focus:border-[#D12329] outline-none"></textarea>
+                </div>
+            </div>
+            <div class="mt-8 grid grid-cols-2 gap-4">
+                <button onclick="UI.toggleModal(false)"
+                    class="py-3 text-xs font-bold text-slate-400 hover:text-slate-600 uppercase">
+                    取消
+                </button>
+                <button onclick="Core.submitRequest()"
+                    class="py-3 bg-[#D12329] text-white text-xs font-bold uppercase hover:bg-red-800 transition">
+                    確認發布需求
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════
+         SCRIPTS  —  全部在全域範圍定義，無巢狀
+    ═══════════════════════════════════════ -->
+    <script>
+        /* ─────────────────────────────────────────
+           1. 全域狀態 STATE
+        ───────────────────────────────────────── */
+        const STATE = {
+            isAnalyzing: false,
+            mode: 'blueprint',    // 'blueprint' | 'manual'
+            lastResult: null,
+            exchangeRate: 32.5,
+            metalPrices: {
+                ALUMINUM: { label: 'Al 5083', price: 195 },
+                STAINLESS_304: { label: 'SUS 304', price: 320 },
+                'Carbon Steel_SS400': { label: 'SS400', price: 85 },
+                'Galvanized Steel': { label: 'GI Steel', price: 110 },
+            }
+        };
+
+        const API_BASE = 'https://ai-foundry-backend-production.up.railway.app/api';
+
+        /* ─────────────────────────────────────────
+           2. Core — 商業邏輯 & API 呼叫
+        ───────────────────────────────────────── */
+        const Core = {
+
+            /** 通用 Fetch 封裝（含 timeout） */
+            async request(url, options = {}, timeout = 8000) {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), timeout);
+                try {
+                    const res = await fetch(url, { ...options, signal: controller.signal });
+                    clearTimeout(timer);
+                    return res;
+                } catch (e) {
+                    clearTimeout(timer);
+                    throw (e.name === 'AbortError') ? new Error('API 請求超時') : e;
+                }
+            },
+
+            /** 抓取即時金屬報價（呼叫後端 /api/metals/prices） */
+            async fetchMetalPrice() {
+                try {
+                    const res = await this.request(`${API_BASE}/metals/prices`);
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const data = await res.json();
+                    // 更新 STATE（後端回傳格式預期：{ ALUMINUM: 195, STAINLESS_304: 320, ... }）
+                    Object.entries(data).forEach(([key, price]) => {
+                        if (STATE.metalPrices[key]) STATE.metalPrices[key].price = price;
+                    });
+                    UI.renderTicker();
+                    UI.log('金屬報價已同步 ✓');
+                } catch (e) {
+                    // 後端未啟動時使用預設值，不阻斷流程
+                    UI.log('使用預設報價（後端離線）', 'warn');
+                    UI.renderTicker();
+                }
+            },
+
+            /** 執行估價分析 */
+            async startAnalysis() {
+                if (STATE.isAnalyzing) return;
+                STATE.isAnalyzing = true;
+                UI.setStatus('ANALYZING');
+                UI.log('開始估價分析...');
+
+                try {
+                    const category = document.getElementById('in-category')?.value || 'cnc';
+                    const apiUrl = `${API_BASE}/estimate/${category}/calculate`;
+
+                    // 彙整工序分鐘數（供 CNC 模式使用）
+                    let totalTimeMins = 0;
+                    document.querySelectorAll('.row-cut-time').forEach(el => {
+                        totalTimeMins += parseFloat(el.innerText.replace(/[^\d.]/g, '')) || 0;
+                    });
+
+                    const payload = {
+                        program_minutes: Math.round(totalTimeMins),
+                        tool_type: 'carbide',
+                        material: document.getElementById('in-mat')?.value || 'ALUMINUM',
+                        length: parseFloat(document.getElementById('in-l')?.value) || 0,
+                        width: parseFloat(document.getElementById('in-w')?.value) || 0,
+                        height: parseFloat(document.getElementById('in-h')?.value) || 0,
+                        quantity: parseInt(document.getElementById('in-qty')?.value) || 1,
+                    };
+
+                    UI.log(`發送請求 → ${apiUrl}`);
+                    const res = await this.request(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+
+                    if (!res.ok) throw new Error(`伺服器錯誤 HTTP ${res.status}`);
+
+                    const result = await res.json();
+                    STATE.lastResult = result;
+                    this._renderResult(result);
+                    UI.setStatus('DONE');
+                    UI.log(`估價完成 → 總計 $${result.total?.toLocaleString() ?? '—'}`);
+
+                } catch (e) {
+                    UI.setStatus('ERROR');
+                    UI.log(`錯誤：${e.message}`, 'error');
+                } finally {
+                    STATE.isAnalyzing = false;
+                }
+            },
+
+            /** 渲染估價結果至 UI */
+            _renderResult(data) {
+                const totalCostEl = document.getElementById('totalCost');
+                const resultArea = document.getElementById('result-area');
+                const actionBtns = document.getElementById('action-buttons');
+
+                if (totalCostEl) {
+                    totalCostEl.innerText = `$${Math.round(data.total ?? 0).toLocaleString()}`;
+                }
+                resultArea?.classList.remove('hidden');
+                actionBtns?.classList.remove('hidden');
+            },
+
+            /** 匯出 PDF */
+            exportPDF() {
+                if (!STATE.lastResult) {
+                    UI.log('尚無估價結果可匯出', 'warn');
+                    return;
+                }
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                doc.setFontSize(16);
+                doc.text('AI Foundry — 精密估價報告', 20, 20);
+                doc.setFontSize(12);
+                doc.text(`材料：${document.getElementById('in-mat')?.value ?? '—'}`, 20, 40);
+                doc.text(`總計：$${Math.round(STATE.lastResult.total ?? 0).toLocaleString()}`, 20, 55);
+                doc.text(`產出時間：${new Date().toLocaleString('zh-TW')}`, 20, 70);
+                doc.save('ai-foundry-estimate.pdf');
+                UI.log('PDF 已匯出 ✓');
+            },
+
+            /** 發布採購需求 */
+            async submitRequest() {
+                const date = document.getElementById('req-date')?.value;
+                const region = document.getElementById('req-region')?.value;
+                const note = document.getElementById('req-note')?.value;
+
+                if (!date) { alert('請填寫期望完成時間'); return; }
+
+                try {
+                    UI.log('發布採購需求...');
+                    const res = await this.request(`${API_BASE}/requests/submit`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ date, region, note, estimate: STATE.lastResult }),
+                    });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    UI.toggleModal(false);
+                    UI.log('採購需求已發布 ✓');
+                } catch (e) {
+                    UI.log(`發布失敗：${e.message}`, 'error');
+                }
+            },
+        };
+
+
+        /* ─────────────────────────────────────────
+           3. UI — 純介面操作，不含商業邏輯
+        ───────────────────────────────────────── */
+        const UI = {
+
+            /** 切換藍圖 / 規格 模式 */
+            switchMode(mode) {
+                STATE.mode = mode;
+                const isBp = (mode === 'blueprint');
+
+                document.getElementById('mode-blueprint')?.classList.toggle('hidden', !isBp);
+                document.getElementById('mode-manual')?.classList.toggle('hidden', isBp);
+
+                document.getElementById('tab-bp').className = `px-8 py-3 text-xs font-bold ${isBp ? 'tab-active' : 'tab-inactive'}`;
+                document.getElementById('tab-manual').className = `px-8 py-3 text-xs font-bold ${isBp ? 'tab-inactive' : 'tab-active'}`;
+
+                this.log(`切換至 ${isBp ? '藍圖掃描' : '規格描述'} 模式`);
+            },
+
+            /** 觸發隱藏的 file input */
+            triggerUpload() {
+                document.getElementById('file-input')?.click();
+            },
+
+            /** 圖片選擇後顯示預覽 + 雷射掃描動畫 */
+            handleFileSelect(e) {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (!file.type.startsWith('image/')) { alert('請上傳圖片檔案'); return; }
+
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const preview = document.getElementById('image-preview');
+                    const prompt = document.getElementById('upload-prompt');
+                    const laser = document.getElementById('laser');
+                    if (preview) {
+                        preview.src = ev.target.result;
+                        preview.classList.remove('hidden');
+                    }
+                    prompt?.classList.add('hidden');
+                    // 雷射掃描動畫 2 次後停止
+                    if (laser) {
+                        laser.classList.add('laser-active');
+                        setTimeout(() => laser.classList.remove('laser-active'), 4200);
+                    }
+                    this.log(`圖片已載入：${file.name}`);
+                };
+                reader.readAsDataURL(file);
+            },
+
+            /** 開 / 關 Modal */
+            toggleModal(show) {
+                const modal = document.getElementById('request-modal');
+                if (!modal) return;
+                if (show) {
+                    modal.style.display = 'flex';
+                    requestAnimationFrame(() => modal.classList.add('modal-show'));
+                } else {
+                    modal.classList.remove('modal-show');
+                    setTimeout(() => modal.style.display = 'none', 200);
+                }
+            },
+
+            /** Nav 高亮 */
+            highlightNav(el) {
+                document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+                el?.classList.add('active');
+            },
+
+            /** 更新 Status Badge */
+            setStatus(status) {
+                const badge = document.getElementById('status-badge');
+                if (!badge) return;
+                const map = {
+                    STANDBY: 'bg-slate-100 text-slate-400',
+                    ANALYZING: 'bg-yellow-100 text-yellow-600',
+                    DONE: 'bg-green-100 text-green-600',
+                    ERROR: 'bg-red-100 text-red-600',
+                };
+                badge.className = `text-[10px] font-bold px-3 py-1 rounded-full ${map[status] ?? map.STANDBY}`;
+                badge.innerText = status;
+            },
+
+            /** 追加 log 訊息 */
+            log(msg, level = 'info') {
+                const el = document.getElementById('log-output');
+                if (!el) return;
+                const prefix = level === 'error' ? '✗' : level === 'warn' ? '⚠' : '>';
+                el.innerText += `\n${prefix} ${msg}`;
+                el.scrollTop = el.scrollHeight;
+            },
+
+            /** 渲染 Price Ticker */
+            renderTicker() {
+                const el = document.getElementById('price-ticker');
+                if (!el) return;
+                el.innerHTML = Object.values(STATE.metalPrices)
+                    .map(m => `<span>${m.label}: <b>${m.price}</b></span>`)
+                    .join('');
+            },
+        };
+
+
+        /* ─────────────────────────────────────────
+           4. 初始化
+        ───────────────────────────────────────── */
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('[System] 初始化中...');
+
+            UI.renderTicker();          // 先用預設值渲染 ticker
+            UI.switchMode('blueprint'); // 預設藍圖模式
+
+            await Core.fetchMetalPrice(); // 嘗試同步後端報價（失敗不阻斷）
+
+            console.log('[System] 就緒');
+        });
+    </script>
+    <!-- ════════════════════════════════════════
+     AI FOUNDRY — 浮動對話視窗
+     使用方式：貼在任意頁面的 </body> 前
+     chat.html 的路徑依頁面層級調整：
+       主頁 (估價流程/) → chat.html
+       估價頁 (ai-foundry/) → ../chat.html
+════════════════════════════════════════ -->
+
+    <style>
+        /* ── Float trigger button ── */
+        .chat-float-btn {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 999;
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            background: #1a2b49;
+            color: white;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .chat-float-btn:hover {
+            background: #D12329;
+            transform: scale(1.08);
+        }
+
+        .chat-float-badge {
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            background: #D12329;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            border: 2px solid white;
+        }
+
+        /* ── Float popup ── */
+        .chat-float-popup {
+            position: fixed;
+            bottom: 94px;
+            right: 28px;
+            z-index: 998;
+            width: 340px;
+            height: 480px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+
+        .chat-float-popup.open {
+            display: flex;
+        }
+
+        .cfp-header {
+            background: #1a2b49;
+            color: white;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .cfp-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cfp-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #D12329;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .cfp-header h4 {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .cfp-header span {
+            font-size: 10px;
+            color: #94a3b8;
+        }
+
+        .cfp-header-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .cfp-icon-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        .cfp-icon-btn:hover {
+            color: white;
+        }
+
+        .cfp-conv-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .cfp-conv-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid #f8fafc;
+            transition: 0.15s;
+        }
+
+        .cfp-conv-item:hover {
+            background: #f8fafc;
+        }
+
+        .cfp-conv-item.active {
+            background: #fff0f0;
+        }
+
+        .cfp-conv-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #1a2b49;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .cfp-conv-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .cfp-conv-name {
+            font-size: 12px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .cfp-conv-preview {
+            font-size: 10px;
+            color: #94a3b8;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 1px;
+        }
+
+        .cfp-unread {
+            background: #D12329;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 3px;
+            flex-shrink: 0;
+        }
+
+        .cfp-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #f8fafc;
+            display: none;
+        }
+
+        .cfp-msg {
+            display: flex;
+            gap: 8px;
+            max-width: 85%;
+        }
+
+        .cfp-msg.self {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .cfp-msg-bubble {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            border-top-left-radius: 3px;
+            padding: 8px 12px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .cfp-msg.self .cfp-msg-bubble {
+            background: #1a2b49;
+            color: white;
+            border: none;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 3px;
+        }
+
+        .cfp-msg-time {
+            font-size: 10px;
+            color: #94a3b8;
+            align-self: flex-end;
+        }
+
+        .cfp-input-area {
+            border-top: 1px solid #e5e7eb;
+            padding: 10px 12px;
+            display: none;
+            flex-shrink: 0;
+        }
+
+        .cfp-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .cfp-input {
+            flex: 1;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 8px 14px;
+            font-size: 12px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .cfp-input:focus {
+            border-color: #1a2b49;
+        }
+
+        .cfp-send {
+            background: #1a2b49;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .cfp-send:hover {
+            background: #D12329;
+        }
+
+        .cfp-back {
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 0 0 8px;
+            display: block;
+            font-family: inherit;
+        }
+
+        .cfp-back:hover {
+            color: #D12329;
+        }
+
+        .cfp-open-full {
+            display: block;
+            text-align: center;
+            padding: 8px;
+            font-size: 11px;
+            color: #94a3b8;
+            text-decoration: none;
+            border-top: 1px solid #f1f5f9;
+            background: white;
+            flex-shrink: 0;
+        }
+
+        .cfp-open-full:hover {
+            color: #D12329;
+        }
+    </style>
+
+    <!-- Trigger button -->
+    <button class="chat-float-btn" onclick="toggleChatFloat()" title="訊息中心">
+        💬
+        <span class="chat-float-badge" id="cfp-total-badge">3</span>
+    </button>
+
+    <!-- Popup -->
+    <div class="chat-float-popup" id="chat-float-popup">
+        <div class="cfp-header">
+            <div class="cfp-header-left">
+                <div class="cfp-avatar">💬</div>
+                <div>
+                    <h4>訊息中心</h4>
+                    <span id="cfp-subtitle">3 則未讀</span>
+                </div>
+            </div>
+            <div class="cfp-header-actions">
+                <button class="cfp-icon-btn" onclick="openFullChat()" title="開啟完整對話頁面">⛶</button>
+                <button class="cfp-icon-btn" onclick="toggleChatFloat()">✕</button>
+            </div>
+        </div>
+
+        <!-- Conversation list view -->
+        <div class="cfp-conv-list" id="cfp-conv-list"></div>
+
+        <!-- Single chat view (hidden by default) -->
+        <div class="cfp-messages" id="cfp-messages"></div>
+        <div class="cfp-input-area" id="cfp-input-area">
+            <button class="cfp-back" onclick="cfpBack()">← 返回列表</button>
+            <div class="cfp-input-row">
+                <input class="cfp-input" id="cfp-input" placeholder="輸入訊息..."
+                    onkeydown="if(event.key==='Enter'){cfpSend();}">
+                <button class="cfp-send" onclick="cfpSend()">傳送</button>
+            </div>
+        </div>
+
+        <a class="cfp-open-full" href="#" id="cfp-full-link">在完整頁面開啟 →</a>
+    </div>
+
+    <script>
+        (function () {
+            const CFP_CONVS = [
+                {
+                    id: 1, name: '台中精密科技', initial: '台', unread: 2, lastMsg: '好的，我們可以配合您的時程',
+                    messages: [
+                        { from: 'other', text: '請問尺寸公差要求是幾級？', time: '09:10' },
+                        { from: 'me', text: '需要 IT7 等級', time: '09:15' },
+                        { from: 'other', text: '好的，IT7 沒問題', time: '09:18' },
+                        { from: 'other', text: '好的，我們可以配合您的時程', time: '14:32' },
+                    ]
+                },
+                {
+                    id: 2, name: '南部鐵工所', initial: '南', unread: 0, lastMsg: '圖面已收到，明天回覆',
+                    messages: [
+                        { from: 'other', text: '您好，看到您發布的需求', time: '昨天' },
+                        { from: 'me', text: '需要 SS400 材質，10 組', time: '昨天' },
+                        { from: 'other', text: '圖面已收到，明天回覆', time: '昨天' },
+                    ]
+                },
+                {
+                    id: 3, name: '北部彩鋼工程行', initial: '北', unread: 1, lastMsg: '[圖片]',
+                    messages: [
+                        { from: 'other', text: '針對您的鐵皮廠房需求，我們有興趣接洽', time: '3天前' },
+                        { from: 'me', text: '好的，廠房 20m × 40m', time: '3天前' },
+                    ]
+                },
+            ];
+
+            let cfpActiveId = null;
+
+            // Detect page depth for full chat link
+            const isSubPage = window.location.pathname.includes('/ai-foundry/');
+            const chatHref = isSubPage ? '../chat.html' : 'chat.html';
+            document.getElementById('cfp-full-link').href = chatHref;
+
+            function getTotalUnread() {
+                return CFP_CONVS.reduce((s, c) => s + c.unread, 0);
+            }
+
+            function updateBadge() {
+                const n = getTotalUnread();
+                const badge = document.getElementById('cfp-total-badge');
+                badge.textContent = n;
+                badge.style.display = n > 0 ? 'flex' : 'none';
+                document.getElementById('cfp-subtitle').textContent = n > 0 ? `${n} 則未讀` : '無新訊息';
+            }
+
+            function renderCfpList() {
+                document.getElementById('cfp-conv-list').innerHTML = CFP_CONVS.map(c => `
+            <div class="cfp-conv-item" onclick="cfpOpen(${c.id})">
+                <div class="cfp-conv-avatar">${c.initial}</div>
+                <div class="cfp-conv-info">
+                    <div class="cfp-conv-name">${c.name}</div>
+                    <div class="cfp-conv-preview">${c.lastMsg}</div>
+                </div>
+                ${c.unread > 0 ? `<div class="cfp-unread">${c.unread}</div>` : ''}
+            </div>`).join('');
+            }
+
+            window.cfpOpen = function (id) {
+                cfpActiveId = id;
+                const conv = CFP_CONVS.find(c => c.id === id);
+                conv.unread = 0;
+                updateBadge();
+
+                document.getElementById('cfp-conv-list').style.display = 'none';
+                document.getElementById('cfp-full-link').style.display = 'none';
+                const msgs = document.getElementById('cfp-messages');
+                const input = document.getElementById('cfp-input-area');
+                msgs.style.display = 'flex';
+                input.style.display = 'block';
+
+                msgs.innerHTML = conv.messages.map(m => `
+            <div class="cfp-msg ${m.from === 'me' ? 'self' : ''}">
+                <div class="cfp-msg-bubble">${m.text}</div>
+                <div class="cfp-msg-time">${m.time}</div>
+            </div>`).join('');
+                msgs.scrollTop = msgs.scrollHeight;
+                renderCfpList();
+            };
+
+            window.cfpBack = function () {
+                cfpActiveId = null;
+                document.getElementById('cfp-conv-list').style.display = 'block';
+                document.getElementById('cfp-full-link').style.display = 'block';
+                document.getElementById('cfp-messages').style.display = 'none';
+                document.getElementById('cfp-input-area').style.display = 'none';
+            };
+
+            window.cfpSend = function () {
+                const input = document.getElementById('cfp-input');
+                const text = input.value.trim();
+                if (!text || !cfpActiveId) return;
+                const conv = CFP_CONVS.find(c => c.id === cfpActiveId);
+                const now = new Date();
+                const t = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                conv.messages.push({ from: 'me', text, time: t });
+                conv.lastMsg = text;
+                input.value = '';
+                cfpOpen(cfpActiveId);
+
+                setTimeout(() => {
+                    conv.messages.push({ from: 'other', text: '收到，我們稍後回覆您。', time: t });
+                    conv.lastMsg = '收到，我們稍後回覆您。';
+                    if (cfpActiveId === conv.id) cfpOpen(cfpActiveId);
+                    else { conv.unread++; renderCfpList(); updateBadge(); }
+                }, 1500);
+            };
+
+            window.toggleChatFloat = function () {
+                const popup = document.getElementById('chat-float-popup');
+                popup.classList.toggle('open');
+                if (popup.classList.contains('open')) renderCfpList();
+            };
+
+            window.openFullChat = function () {
+                window.location.href = chatHref;
+            };
+
+            updateBadge();
+        })();
+    </script>
+
+</body>
+
+</html>

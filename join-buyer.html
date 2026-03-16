@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>需求端會員加入 — AI Foundry</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
+
+        :root {
+            --red: #D12329;
+            --navy: #1a2b49;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            color: #333;
+        }
+
+        .topbar {
+            background: var(--navy);
+            color: white;
+            padding: 6px 24px;
+            font-size: 11px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 24px;
+        }
+
+        .topbar a {
+            color: white;
+            text-decoration: none;
+        }
+
+        .topbar a:hover {
+            color: #ccc;
+        }
+
+        .main-nav {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .main-nav-inner {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--navy);
+            text-decoration: none;
+            letter-spacing: -0.05em;
+        }
+
+        .logo span {
+            color: var(--red);
+        }
+
+        .hero {
+            background: var(--navy);
+            color: white;
+            padding: 48px 24px;
+            text-align: center;
+        }
+
+        .hero .tag {
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 0.3em;
+            color: var(--red);
+            margin-bottom: 12px;
+        }
+
+        .hero h1 {
+            font-size: 32px;
+            font-weight: 900;
+            margin: 0 0 8px;
+        }
+
+        .hero p {
+            color: #94a3b8;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .steps-wrap {
+            max-width: 460px;
+            margin: 32px auto 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .step-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: bold;
+            border: 2px solid #334155;
+            color: #64748b;
+            transition: 0.3s;
+        }
+
+        .step-circle.active {
+            background: var(--red);
+            border-color: var(--red);
+            color: white;
+        }
+
+        .step-circle.done {
+            background: #22c55e;
+            border-color: #22c55e;
+            color: white;
+        }
+
+        .step-label {
+            font-size: 10px;
+            color: #64748b;
+            white-space: nowrap;
+        }
+
+        .step-label.active {
+            color: white;
+            font-weight: bold;
+        }
+
+        .step-line {
+            flex: 1;
+            height: 2px;
+            background: #334155;
+            margin: 0 8px;
+            margin-bottom: 20px;
+            min-width: 40px;
+        }
+
+        .step-line.done {
+            background: #22c55e;
+        }
+
+        .form-wrap {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 32px 24px 60px;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .form-card-header {
+            background: var(--navy);
+            color: white;
+            padding: 16px 24px;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-card-header .step-num {
+            background: var(--red);
+            padding: 2px 8px;
+            border-radius: 2px;
+            font-size: 10px;
+        }
+
+        .form-body {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #888;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .field input,
+        .field select,
+        .field textarea {
+            padding: 11px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 3px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+        }
+
+        .field input:focus,
+        .field select:focus,
+        .field textarea:focus {
+            border-color: var(--red);
+        }
+
+        .field textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .required-star {
+            color: var(--red);
+            margin-left: 2px;
+        }
+
+        .check-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 3px;
+            padding: 7px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: 0.15s;
+        }
+
+        .check-item:hover {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        .check-item input {
+            display: none;
+        }
+
+        .check-item.checked {
+            background: #fff0f0;
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        /* Account type selector */
+        .type-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .type-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: center;
+        }
+
+        .type-card:hover {
+            border-color: var(--red);
+        }
+
+        .type-card.selected {
+            border-color: var(--red);
+            background: #fff0f0;
+        }
+
+        .type-card .icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .type-card .title {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--navy);
+        }
+
+        .type-card .desc {
+            font-size: 11px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            padding: 16px 24px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .btn {
+            padding: 11px 24px;
+            border: none;
+            border-radius: 3px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            transition: 0.2s;
+        }
+
+        .btn-prev {
+            background: white;
+            border: 1px solid #ddd;
+            color: #666;
+        }
+
+        .btn-prev:hover {
+            background: #f8fafc;
+        }
+
+        .btn-next {
+            background: var(--navy);
+            color: white;
+        }
+
+        .btn-next:hover {
+            background: #111e33;
+        }
+
+        .btn-submit {
+            background: var(--red);
+            color: white;
+        }
+
+        .btn-submit:hover {
+            background: #a81c21;
+        }
+
+        .success-screen {
+            display: none;
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .success-icon {
+            font-size: 56px;
+            margin-bottom: 16px;
+        }
+
+        .success-screen h2 {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--navy);
+            margin: 0 0 8px;
+        }
+
+        .success-screen p {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .step-page {
+            display: none;
+        }
+
+        .step-page.active {
+            display: block;
+        }
+
+        /* Benefits banner */
+        .benefits {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 0;
+        }
+
+        .benefit-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 3px;
+            padding: 14px;
+            text-align: center;
+        }
+
+        .benefit-item .bi {
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+
+        .benefit-item p {
+            font-size: 11px;
+            color: #64748b;
+            margin: 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="topbar">
+        <a href="ai-foundry.html">首頁</a>
+        <span style="color:var(--red); font-weight:bold;">繁體中文</span>
+    </div>
+    <nav class="main-nav">
+        <div class="main-nav-inner">
+            <a href="ai-foundry.html" class="logo">AI <span>FOUNDRY</span></a>
+            <span style="font-size:12px; color:#888;">需求端會員申請</span>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <div class="tag">BUYER REGISTRATION</div>
+        <h1>需求端會員加入</h1>
+        <p>發布加工需求，快速媒合全台優質供應商</p>
+
+        <div class="steps-wrap">
+            <div class="step-item">
+                <div class="step-circle active" id="sc1">1</div>
+                <div class="step-label active" id="sl1">帳號類型</div>
+            </div>
+            <div class="step-line" id="line1"></div>
+            <div class="step-item">
+                <div class="step-circle" id="sc2">2</div>
+                <div class="step-label" id="sl2">基本資料</div>
+            </div>
+            <div class="step-line" id="line2"></div>
+            <div class="step-item">
+                <div class="step-circle" id="sc3">3</div>
+                <div class="step-label" id="sl3">確認送出</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-wrap">
+        <div class="form-card">
+
+            <!-- Step 1: 帳號類型 -->
+            <div class="step-page active" id="page1">
+                <div class="form-card-header">
+                    <span class="step-num">STEP 01</span> 選擇帳號類型
+                </div>
+                <div class="form-body">
+                    <div class="benefits">
+                        <div class="benefit-item">
+                            <div class="bi">🚀</div>
+                            <p>快速發布需求<br>最快 10 分鐘</p>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="bi">🔒</div>
+                            <p>報價資料加密<br>保護商業機密</p>
+                        </div>
+                        <div class="benefit-item">
+                            <div class="bi">🏭</div>
+                            <p>媒合全台<br>認證供應商</p>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>您的身份 <span class="required-star">*</span></label>
+                        <div class="type-cards">
+                            <div class="type-card" id="type-corp" onclick="selectType('corp')">
+                                <div class="icon">🏢</div>
+                                <div class="title">企業 / 工廠</div>
+                                <div class="desc">有統編的法人或工廠</div>
+                            </div>
+                            <div class="type-card" id="type-ind" onclick="selectType('ind')">
+                                <div class="icon">👤</div>
+                                <div class="title">個人 / 工作室</div>
+                                <div class="desc">個人接案或小型工作室</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>主要需求類型（可複選）</label>
+                        <div class="check-group" id="cg-need">
+                            <div class="check-item" data-val="cnc">⚙️ CNC 加工</div>
+                            <div class="check-item" data-val="tin">🏗️ 鐵皮屋工程</div>
+                            <div class="check-item" data-val="custom">🔧 客製化鐵製加工</div>
+                            <div class="check-item" data-val="weld">🔥 焊接結構件</div>
+                            <div class="check-item" data-val="sheet">📐 板金折板</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-next" onclick="goStep(2)">下一步 →</button>
+                </div>
+            </div>
+
+            <!-- Step 2: 基本資料 -->
+            <div class="step-page" id="page2">
+                <div class="form-card-header">
+                    <span class="step-num">STEP 02</span> 基本資料
+                </div>
+                <div class="form-body">
+
+                    <!-- 企業欄位 -->
+                    <div id="corp-fields">
+                        <div style="display:flex; flex-direction:column; gap:18px;">
+                            <div class="field-row">
+                                <div class="field">
+                                    <label>公司 / 工廠名稱 <span class="required-star">*</span></label>
+                                    <input type="text" id="b-company" placeholder="XX 有限公司">
+                                </div>
+                                <div class="field">
+                                    <label>統一編號 <span class="required-star">*</span></label>
+                                    <input type="text" id="b-taxid" placeholder="12345678" maxlength="8">
+                                </div>
+                            </div>
+                            <div class="field-row">
+                                <div class="field">
+                                    <label>負責人 / 聯絡人姓名 <span class="required-star">*</span></label>
+                                    <input type="text" id="b-name-corp" placeholder="王大明">
+                                </div>
+                                <div class="field">
+                                    <label>所在縣市 <span class="required-star">*</span></label>
+                                    <select id="b-city-corp">
+                                        <option value="">請選擇</option>
+                                        <option>台北市</option>
+                                        <option>新北市</option>
+                                        <option>桃園市</option>
+                                        <option>台中市</option>
+                                        <option>台南市</option>
+                                        <option>高雄市</option>
+                                        <option>新竹市</option>
+                                        <option>新竹縣</option>
+                                        <option>彰化縣</option>
+                                        <option>其他</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 個人欄位 -->
+                    <div id="ind-fields" style="display:none;">
+                        <div style="display:flex; flex-direction:column; gap:18px;">
+                            <div class="field-row">
+                                <div class="field">
+                                    <label>姓名 <span class="required-star">*</span></label>
+                                    <input type="text" id="b-name-ind" placeholder="王大明">
+                                </div>
+                                <div class="field">
+                                    <label>所在縣市 <span class="required-star">*</span></label>
+                                    <select id="b-city-ind">
+                                        <option value="">請選擇</option>
+                                        <option>台北市</option>
+                                        <option>新北市</option>
+                                        <option>桃園市</option>
+                                        <option>台中市</option>
+                                        <option>台南市</option>
+                                        <option>高雄市</option>
+                                        <option>新竹市</option>
+                                        <option>新竹縣</option>
+                                        <option>彰化縣</option>
+                                        <option>其他</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 共用欄位：設定帳號密碼 -->
+                    <div
+                        style="border-top:1px dashed #e2e8f0; padding-top:18px; display:flex; flex-direction:column; gap:18px;">
+                        <div class="field">
+                            <label>聯絡電話 <span class="required-star">*</span></label>
+                            <input type="tel" id="b-phone" placeholder="0912-345-678">
+                        </div>
+                        <div class="field">
+                            <label>帳號（Email）<span class="required-star">*</span></label>
+                            <input type="email" id="b-email" placeholder="your@email.com">
+                        </div>
+                        <div class="field-row">
+                            <div class="field">
+                                <label>設定密碼 <span class="required-star">*</span></label>
+                                <input type="password" id="b-pw" placeholder="至少 8 碼">
+                            </div>
+                            <div class="field">
+                                <label>確認密碼 <span class="required-star">*</span></label>
+                                <input type="password" id="b-pw2" placeholder="再輸入一次">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-prev" onclick="goStep(1)">← 上一步</button>
+                    <button class="btn btn-next" onclick="goStep(3)">下一步 →</button>
+                </div>
+            </div>
+
+            <!-- Step 3: 確認 -->
+            <div class="step-page" id="page3">
+                <div class="form-card-header">
+                    <span class="step-num">STEP 03</span> 確認送出
+                </div>
+                <div class="form-body">
+                    <div id="review-content" style="font-size:13px; line-height:2; color:#444;"></div>
+                    <div
+                        style="background:#e8f5e9; border:1px solid #c8e6c9; border-radius:3px; padding:12px 16px; font-size:12px; color:#2e7d32;">
+                        ✅ 需求端會員申請<strong>即刻生效</strong>，完成後可立即使用估價與發布需求功能。
+                    </div>
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-prev" onclick="goStep(2)">← 上一步</button>
+                    <button class="btn btn-submit" onclick="submitForm()">確認完成註冊</button>
+                </div>
+            </div>
+
+            <!-- Success -->
+            <div class="success-screen" id="success-screen">
+                <div class="success-icon">🎉</div>
+                <h2>註冊成功！</h2>
+                <p>歡迎加入 AI Foundry 需求端會員<br>您現在可以立即發布採購需求，開始媒合供應商</p>
+                <div style="display:flex; gap:10px; justify-content:center; margin-top:24px;">
+                    <button class="btn btn-next" onclick="window.location.href='ai-foundry.html'">前往首頁</button>
+                    <button class="btn btn-submit"
+                        onclick="window.location.href='ai-foundry/estimate-cnc.html'">立即估價</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let selectedType = '';
+
+        function selectType(t) {
+            selectedType = t;
+            document.getElementById('type-corp').classList.toggle('selected', t === 'corp');
+            document.getElementById('type-ind').classList.toggle('selected', t === 'ind');
+        }
+
+        function toggleCheck(el) {
+            el.classList.toggle('checked');
+        }
+
+        // Bind click to all check-items
+        document.querySelectorAll('.check-item').forEach(el => {
+            el.addEventListener('click', function () { toggleCheck(this); });
+        });
+
+        function showTypeFields() {
+            document.getElementById('corp-fields').style.display = selectedType === 'corp' ? 'block' : 'none';
+            document.getElementById('ind-fields').style.display = selectedType === 'ind' ? 'block' : 'none';
+        }
+
+        function goStep(n) {
+            if (n > currentStep) {
+                if (currentStep === 1) {
+                    if (!selectedType) { alert('請選擇帳號類型'); return; }
+                }
+                if (currentStep === 2) {
+                    const phone = document.getElementById('b-phone').value;
+                    const email = document.getElementById('b-email').value;
+                    const pw = document.getElementById('b-pw').value;
+                    const pw2 = document.getElementById('b-pw2').value;
+                    if (!phone) { alert('請填寫聯絡電話'); return; }
+                    if (!email) { alert('請填寫 Email'); return; }
+                    if (pw.length < 8) { alert('密碼至少需要 8 碼'); return; }
+                    if (pw !== pw2) { alert('兩次密碼輸入不一致'); return; }
+                    if (selectedType === 'corp') {
+                        if (!document.getElementById('b-company').value || !document.getElementById('b-taxid').value) {
+                            alert('請填寫公司名稱與統編'); return;
+                        }
+                    }
+                    if (selectedType === 'ind') {
+                        if (!document.getElementById('b-name-ind').value) {
+                            alert('請填寫姓名'); return;
+                        }
+                    }
+                }
+            }
+
+            if (n === 2) showTypeFields();
+
+            if (n === 3) {
+                const isCorp = selectedType === 'corp';
+                const name = isCorp ? document.getElementById('b-name-corp').value : document.getElementById('b-name-ind').value;
+                const city = isCorp ? document.getElementById('b-city-corp').value : document.getElementById('b-city-ind').value;
+                document.getElementById('review-content').innerHTML = `
+                <table style="width:100%; border-collapse:collapse;">
+                    <tr><td style="padding:6px 0; color:#888; width:40%;">帳號類型</td><td style="font-weight:bold;">${isCorp ? '企業 / 工廠' : '個人 / 工作室'}</td></tr>
+                    ${isCorp ? `<tr><td style="padding:6px 0; color:#888;">公司名稱</td><td style="font-weight:bold;">${document.getElementById('b-company').value}</td></tr>
+                    <tr><td style="padding:6px 0; color:#888;">統一編號</td><td style="font-weight:bold;">${document.getElementById('b-taxid').value}</td></tr>` : ''}
+                    <tr><td style="padding:6px 0; color:#888;">姓名</td><td style="font-weight:bold;">${name}</td></tr>
+                    <tr><td style="padding:6px 0; color:#888;">所在縣市</td><td style="font-weight:bold;">${city || '—'}</td></tr>
+                    <tr><td style="padding:6px 0; color:#888; border-top:1px dashed #eee;">帳號 Email</td><td style="font-weight:bold;">${document.getElementById('b-email').value}</td></tr>
+                    <tr><td style="padding:6px 0; color:#888;">聯絡電話</td><td style="font-weight:bold;">${document.getElementById('b-phone').value}</td></tr>
+                </table>`;
+            }
+
+            currentStep = n;
+            document.querySelectorAll('.step-page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`page${n}`).classList.add('active');
+            updateStepUI(n);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateStepUI(n) {
+            for (let i = 1; i <= 3; i++) {
+                const circle = document.getElementById(`sc${i}`);
+                const label = document.getElementById(`sl${i}`);
+                circle.classList.remove('active', 'done');
+                label.classList.remove('active');
+                if (i < n) { circle.classList.add('done'); circle.innerText = '✓'; }
+                else if (i === n) { circle.classList.add('active'); circle.innerText = i; label.classList.add('active'); }
+                else { circle.innerText = i; }
+            }
+            for (let i = 1; i <= 2; i++) {
+                document.getElementById(`line${i}`).classList.toggle('done', i < n);
+            }
+        }
+
+        function submitForm() {
+            const needTypes = [...document.querySelectorAll('#cg-need .check-item.checked')]
+                .map(el => el.dataset.val).join(',');
+
+            const isCorp = selectedType === 'corp';
+            const payload = {
+                email: document.getElementById('b-email').value,
+                phone: document.getElementById('b-phone').value,
+                password: document.getElementById('b-pw').value,
+                account_type: selectedType,
+                company_name: isCorp ? document.getElementById('b-company').value : '',
+                tax_id: isCorp ? document.getElementById('b-taxid').value : '',
+                owner_name: isCorp ? document.getElementById('b-name-corp').value : document.getElementById('b-name-ind').value,
+                city: isCorp ? document.getElementById('b-city-corp').value : document.getElementById('b-city-ind').value,
+                need_types: needTypes,
+            };
+
+            fetch('https://ai-foundry-backend-production.up.railway.app/auth/register/buyer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    if (!ok) { alert('註冊失敗：' + (data.detail || '請稍後再試')); return; }
+                    localStorage.setItem('ai_foundry_token', data.access_token);
+                    localStorage.setItem('ai_foundry_user', JSON.stringify(data.user));
+                    document.querySelectorAll('.step-page').forEach(p => p.style.display = 'none');
+                    document.getElementById('success-screen').style.display = 'block';
+                })
+                .catch(() => alert('連線失敗，請確認後端伺服器是否運行中'));
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,2027 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CNC 加工估價 — AI Foundry</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
+
+        :root {
+            --red: #D12329;
+            --navy: #1a2b49;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', "Microsoft JhengHei", sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        /* ── Nav ── */
+        .topbar {
+            background: var(--navy);
+            color: white;
+            padding: 6px 24px;
+            font-size: 11px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .topbar a {
+            color: white;
+            text-decoration: none;
+        }
+
+        .topbar a:hover {
+            color: #ccc;
+        }
+
+        .topbar .lang {
+            color: var(--red);
+            font-weight: bold;
+        }
+
+        .ticker-bar {
+            background: #f0f0f0;
+            border-bottom: 1px solid #ddd;
+            padding: 4px 24px;
+            font-size: 10px;
+            font-family: monospace;
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .ticker-bar .live {
+            color: var(--red);
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.5
+            }
+        }
+
+        .main-nav {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .main-nav-inner {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--navy);
+            letter-spacing: -0.05em;
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: var(--red);
+        }
+
+        .breadcrumb {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .breadcrumb a {
+            color: #888;
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            color: var(--red);
+        }
+
+        .breadcrumb span {
+            margin: 0 6px;
+        }
+
+        /* ── Page wrapper ── */
+        .page-wrap {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .page-header {
+            background: var(--navy);
+            color: white;
+            padding: 20px 28px;
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-radius: 4px 4px 0 0;
+        }
+
+        .page-header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .page-header .badge {
+            background: var(--red);
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 3px 10px;
+            border-radius: 2px;
+            letter-spacing: 0.1em;
+        }
+
+        /* ── Main container ── */
+        .container {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            border-radius: 0 0 4px 4px;
+        }
+
+        /* ── Settings panel ── */
+        .settings-panel {
+            background: #fff3cd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 14px;
+            border: 1px solid #ffeeba;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .price-section h4 {
+            margin: 0 0 8px;
+            color: #856404;
+            border-bottom: 1px dashed #dcb262;
+            padding-bottom: 3px;
+            font-size: 13px;
+        }
+
+        .price-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 5px;
+        }
+
+        .price-input-group {
+            display: flex;
+            align-items: center;
+            background: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .price-input-group label {
+            margin-right: 5px;
+            font-weight: bold;
+            color: #333;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .price-input-group input {
+            width: 60px;
+            border: none;
+            text-align: right;
+            font-weight: bold;
+            color: #007bff;
+            outline: none;
+            background: transparent;
+            font-size: 13px;
+        }
+
+        .cut-settings {
+            grid-column: 1/-1;
+            border-top: 1px dashed #dcb262;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 4px;
+        }
+
+        .hole-settings {
+            grid-column: 1/-1;
+            border-top: 1px dashed #dcb262;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 4px;
+        }
+
+        .hole-group,
+        .cut-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            border-right: 1px solid #ccc;
+            padding-right: 12px;
+        }
+
+        /* ── Rules panel ── */
+        .rules-panel {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .rule-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: bold;
+        }
+
+        /* ── Table ── */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 5px;
+            font-size: 13px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        input:focus {
+            border-color: var(--red);
+            outline: none;
+            background: #fff8f8;
+        }
+
+        input:disabled {
+            background: #e9ecef;
+            cursor: not-allowed;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .checkbox-group label:hover {
+            color: #007bff;
+        }
+
+        .checkbox-group input {
+            width: auto;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+        .clamp-wrapper {
+            margin-top: 5px;
+            padding-top: 3px;
+            border-top: 1px dashed #ccc;
+        }
+
+        .clamp-label {
+            font-size: 12px;
+            color: #d9534f;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .clamp-label input {
+            width: 16px;
+            height: 16px;
+            margin-right: 5px;
+        }
+
+        #quoteTable th {
+            background: var(--navy);
+            color: white;
+            padding: 10px 5px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-size: 13px;
+        }
+
+        #quoteTable td {
+            padding: 5px;
+            text-align: center;
+            vertical-align: top;
+            border-bottom: 1px solid #ddd;
+            border-right: 1px solid #ddd;
+            padding-top: 10px;
+        }
+
+        #quoteTable td:first-child {
+            border-left: 1px solid #ddd;
+            vertical-align: middle;
+        }
+
+        .item-group {
+            border-bottom: 3px solid #555;
+        }
+
+        .main-row td {
+            background: #fff;
+            border-bottom: none;
+            height: 90px;
+        }
+
+        .sub-row td {
+            background: #fcfcfc;
+            border-top: 1px solid #eee;
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .details-wrapper {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .holes-panel {
+            flex: 0 0 250px;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cuts-panel {
+            flex: 1;
+            background: #e3f2fd;
+            border: 1px solid #b3d7ff;
+            border-radius: 4px;
+            padding: 10px;
+        }
+
+        .panel-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            border-bottom: 1px dashed rgba(0, 0, 0, 0.2);
+            padding-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .cost-badge {
+            float: right;
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 2px 5px;
+            border-radius: 3px;
+            color: #333;
+        }
+
+        .time-badge {
+            float: right;
+            font-size: 11px;
+            background: #17a2b8;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: white;
+            margin-right: 6px;
+        }
+
+        .hole-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .hole-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hole-item label {
+            font-size: 11px;
+            color: #155724;
+            margin-bottom: 2px;
+            font-weight: bold;
+        }
+
+        .smart-input {
+            text-align: center;
+            font-family: Consolas, monospace;
+            color: #0056b3;
+        }
+
+        .cuts-table {
+            width: 100%;
+            border: none;
+            margin-bottom: 5px;
+            background: white;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .cuts-table th {
+            background: #b3d7ff;
+            color: #004085;
+            font-size: 11px;
+            padding: 5px;
+            border: none;
+            position: static;
+        }
+
+        .cuts-table td {
+            border: none;
+            border-bottom: 1px solid #eee;
+            padding: 4px;
+            background: white;
+            vertical-align: middle !important;
+        }
+
+        .profit-box {
+            margin-top: auto;
+            padding-top: 8px;
+            border-top: 1px solid #b1dfbb;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .profit-label {
+            font-size: 11px;
+            color: #155724;
+            font-weight: bold;
+        }
+
+        .profit-val {
+            font-size: 1.3em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .total-price-display {
+            font-size: 1.3em;
+            color: #d9534f;
+            font-weight: bold;
+        }
+
+        .sub-info-display {
+            font-size: 0.75em;
+            color: #555;
+            display: block;
+            margin-top: 2px;
+            background: #eee;
+            padding: 2px;
+            border-radius: 2px;
+        }
+
+        .warning-text {
+            color: red;
+            font-weight: bold;
+            font-size: 0.8em;
+            display: block;
+        }
+
+        .min-charge-text {
+            color: #e67e22;
+            font-weight: bold;
+            font-size: 0.8em;
+            margin-left: 4px;
+        }
+
+        .time-cell {
+            color: #0056b3;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        /* ── Buttons ── */
+        .btn-group {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 3px;
+            font-size: 14px;
+            transition: 0.2s;
+            color: white;
+            font-family: inherit;
+        }
+
+        .btn-add {
+            background: #28a745;
+        }
+
+        .btn-add:hover {
+            background: #1e7e34;
+        }
+
+        .btn-calc {
+            background: var(--navy);
+            flex-grow: 1;
+        }
+
+        .btn-calc:hover {
+            background: #111e33;
+        }
+
+        .btn-reset {
+            background: #dc3545;
+        }
+
+        .btn-reset:hover {
+            background: #b02030;
+        }
+
+        .btn-excel {
+            background: #17a2b8;
+        }
+
+        .btn-excel:hover {
+            background: #117a8b;
+        }
+
+        .btn-pdf {
+            background: #6610f2;
+        }
+
+        .btn-pdf:hover {
+            background: #520dc2;
+        }
+
+        .btn-sm {
+            padding: 2px 8px;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+
+        .btn-add-cut {
+            background: #17a2b8;
+            color: white;
+            width: 100%;
+            margin-top: 5px;
+            padding: 5px;
+        }
+
+        .btn-add-cut:hover {
+            background: #138496;
+        }
+
+        .btn-back {
+            background: transparent;
+            color: var(--navy);
+            border: 2px solid var(--navy);
+            font-size: 13px;
+            padding: 8px 18px;
+        }
+
+        .btn-back:hover {
+            background: var(--navy);
+            color: white;
+        }
+
+        .summary {
+            margin-top: 20px;
+            text-align: right;
+            font-size: 1.2em;
+            border-top: 2px solid var(--navy);
+            padding-top: 10px;
+        }
+
+        .highlight {
+            color: var(--red);
+            font-weight: bold;
+            font-size: 1.4em;
+        }
+
+        @media print {
+
+            .topbar,
+            .ticker-bar,
+            .main-nav,
+            .page-header,
+            .settings-panel,
+            .rules-panel,
+            .btn-group,
+            .sub-row,
+            .summary button {
+                display: none !important;
+            }
+
+            th:nth-child(1),
+            td:nth-child(1),
+            th:nth-child(2),
+            td:nth-child(2),
+            th:nth-child(4),
+            td:nth-child(4),
+            th:nth-child(5),
+            td:nth-child(5),
+            th:nth-child(6),
+            td:nth-child(6),
+            th:nth-child(7),
+            td:nth-child(7),
+            th:nth-child(8),
+            td:nth-child(8),
+            th:nth-child(9),
+            td:nth-child(9),
+            th:nth-child(10),
+            td:nth-child(10),
+            th:nth-child(12),
+            td:nth-child(12) {
+                display: none;
+            }
+
+            table {
+                border-collapse: collapse;
+            }
+
+            th,
+            td {
+                border: 1px solid #000;
+                padding: 8px;
+                font-size: 12pt;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="topbar">
+        <a href="#">加入我們</a>
+        <a href="#">投資人關係</a>
+        <span>|</span>
+        <span class="lang">繁體中文</span>
+    </div>
+    <div class="ticker-bar">
+        <span class="live">● LIVE PRICES (NT$/kg):</span>
+        <span>Al 5083: <b>195</b></span>
+        <span>SUS 304: <b>320</b></span>
+        <span>SS400: <b>85</b></span>
+        <span>S45C: <b>80</b></span>
+    </div>
+    <nav class="main-nav">
+        <div class="main-nav-inner">
+            <a href="index.html" class="logo">AI <span>FOUNDRY</span></a>
+            <div class="breadcrumb">
+                <a href="index.html">首頁</a>
+                <span>›</span>
+                <span style="color:#333; font-weight:bold;">CNC 加工估價</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-wrap">
+        <div class="page-header">
+            <h1>⚙️ CNC 精密加工估價</h1>
+            <span class="badge">INTERNAL TOOL</span>
+        </div>
+
+        <div class="container">
+
+            <!-- Settings -->
+            <div class="settings-panel">
+                <div class="price-section">
+                    <h4>鋁合金 (5083, 6061中/韓/圓, A69)</h4>
+                    <div class="price-row">
+                        <div class="price-input-group"><label>5083</label><input type="number" id="p_al_5083"
+                                value="195" min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label>6061中鋁</label><input type="number" id="p_al_6061_cn"
+                                value="210" min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label>6061韓板</label><input type="number" id="p_al_6061_kr"
+                                value="220" min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label>6061圓棒</label><input type="number" id="p_al_6061_round"
+                                value="200" min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label>A69日本</label><input type="number" id="p_al_jp" value="250"
+                                min="0" onchange="calculateAll()"></div>
+                    </div>
+                </div>
+                <div class="price-section">
+                    <h4>鋼鐵 (密度: 8.0)</h4>
+                    <div class="price-row">
+                        <div class="price-input-group"><label>S45C</label><input type="number" id="p_fe_s45c" value="80"
+                                min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label>SKD11</label><input type="number" id="p_fe_skd11"
+                                value="200" min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label>SUS303</label><input type="number" id="p_fe_sus303"
+                                value="200" min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label>鍍鉻棒</label><input type="number" id="p_fe_chrome"
+                                value="300" min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label style="color:#d9534f;">SUS304</label><input type="number"
+                                id="p_fe_sus304" value="200" min="0" onchange="calculateAll()"></div>
+                    </div>
+                    <div class="price-row" style="margin-top:5px; border-top:1px dashed #dcb262; padding-top:5px;">
+                        <div class="price-input-group"><label style="color:#0056b3;">鍍鉻/cm²</label><input type="number"
+                                id="p_fe_plate" value="0.5" step="0.01" min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label style="color:#d9534f;">熱處理/kg</label><input type="number"
+                                id="p_fe_heat" value="80" min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label style="color:#6f42c1;">化鎳/kg</label><input type="number"
+                                id="p_fe_nickel" value="70" min="0" onchange="calculateAll()"></div>
+                    </div>
+                </div>
+                <div class="price-section">
+                    <h4>其他材質</h4>
+                    <div class="price-row">
+                        <div class="price-input-group"><label>黃銅</label><input type="number" id="p_cu" value="600"
+                                min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label>塑膠</label><input type="number" id="p_plastic" value="80"
+                                min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label style="color:#856404;">電木</label><input type="number"
+                                id="p_bakelite" value="300" min="0" onchange="calculateAll()"></div>
+                    </div>
+                </div>
+                <div class="cut-settings">
+                    <span style="font-weight:bold; color:#004085; font-size:12px;">⏱️ 切削費率:</span>
+                    <div class="price-input-group"><label>鋁基本費</label><input type="number" id="p_cut_base_soft"
+                            value="80" min="0" onchange="calculateAll()"></div>
+                    <div class="price-input-group"><label>鋁單價/分</label><input type="number" id="p_cut_soft" value="30"
+                            min="0" onchange="calculateAll()"></div>
+                    <div class="price-input-group"><label style="color:#d9534f;">鐵基本費</label><input type="number"
+                            id="p_cut_base_hard" value="130" min="0" onchange="calculateAll()"></div>
+                    <div class="price-input-group"><label style="color:#d9534f;">鐵單價/分</label><input type="number"
+                            id="p_cut_hard" value="50" min="0" onchange="calculateAll()"></div>
+                    <div class="price-input-group"><label style="color:#555;">鐵壓板(+)</label><input type="number"
+                            id="p_fe_clamp_addon" value="3.0" step="0.1" min="0" onchange="calculateAll()"></div>
+                </div>
+                <div class="hole-settings">
+                    <div class="hole-group"><span style="font-weight:bold; color:#155724; font-size:12px;">牙孔:</span>
+                        <div class="price-input-group"><label>鋁</label><input type="number" id="h_tap_al" value="35"
+                                min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label>鐵</label><input type="number" id="h_tap_fe" value="45"
+                                min="0" onchange="calculateAll()"></div>
+                    </div>
+                    <div class="hole-group"><span style="font-weight:bold; color:#155724; font-size:12px;">沉頭:</span>
+                        <div class="price-input-group"><label>鋁</label><input type="number" id="h_cb_al" value="30"
+                                min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label>鐵</label><input type="number" id="h_cb_fe" value="40"
+                                min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label>SUS</label><input type="number" id="h_cb_sus" value="45"
+                                min="0" onchange="calculateAll()"></div>
+                    </div>
+                    <div class="hole-group"><span style="font-weight:bold; color:#155724; font-size:12px;">鑽孔:</span>
+                        <div class="price-input-group"><label>鋁</label><input type="number" id="h_drill_al" value="20"
+                                min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label>銅塑</label><input type="number" id="h_drill_other"
+                                value="25" min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label>鐵</label><input type="number" id="h_drill_fe" value="30"
+                                min="0" onchange="calculateAll()"></div>
+                    </div>
+                    <div class="hole-group"><span style="font-weight:bold; color:#155724; font-size:12px;">Pin:</span>
+                        <div class="price-input-group"><label>鋁</label><input type="number" id="h_pin_al" value="45"
+                                min="0" onchange="calculateAll()"></div>
+                        <div class="price-input-group"><label>鐵</label><input type="number" id="h_pin_fe" value="55"
+                                min="0" onchange="calculateAll()"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rules -->
+            <div class="rules-panel">
+                <div class="rule-item">📦 鋁料: &lt;$30 算$30</div>
+                <div class="rule-item">⚡ 電木: &lt;15g 算$50</div>
+                <div class="rule-item">⚙️ 鋁外型: 基本$80起</div>
+                <div class="rule-item" style="color:#d9534f; font-weight:900;">⚙️ 鐵外型: 基本$130起</div>
+                <div class="rule-item" style="color:#004085;">⏱️ 鋁 80+(分x30) | 鐵 130+(分x50)</div>
+                <div class="rule-item">🔥 熱處理: &lt;1kg算1kg</div>
+                <div class="rule-item">✨ 鐵鍍鉻: &lt;$30算$30</div>
+                <div class="rule-item">🧪 陽極: &lt;$15算$15</div>
+                <div class="rule-item" style="color:#d9534f;">🛑 壓板工法: 低消$200</div>
+            </div>
+
+            <!-- Quote Table -->
+            <table id="quoteTable">
+                <thead>
+                    <tr>
+                        <th width="3%">#</th>
+                        <th width="7%">形狀</th>
+                        <th width="10%">件號</th>
+                        <th width="12%">材料</th>
+                        <th width="11%">加工方式</th>
+                        <th width="11%">表面處理</th>
+                        <th width="6%">厚(H)</th>
+                        <th width="6%">寬(W)</th>
+                        <th width="6%">長(L)</th>
+                        <th width="7%">單重(kg)</th>
+                        <th width="17%">單價($)</th>
+                        <th width="4%">刪</th>
+                    </tr>
+                </thead>
+                <!-- tbody injected by JS -->
+            </table>
+
+            <div class="btn-group">
+                <button class="btn-back" onclick="window.location.href='../ai-foundry.html'">← 返回選單</button>
+                <button class="btn-add" onclick="addNewItem()">+ 新增工件</button>
+                <button class="btn-excel" onclick="exportToExcel()">📥 匯出 Excel</button>
+                <button class="btn-pdf" onclick="window.print()">📄 列印/PDF</button>
+                <button
+                    style="background:#D12329; padding:10px 20px; color:white; border:none; border-radius:3px; font-size:14px; cursor:pointer; font-family:inherit;"
+                    onclick="openModal()">📢 發布需求</button>
+                <button class="btn-calc" onclick="calculateAll()">⚡ 重新計算</button>
+                <button class="btn-reset" onclick="resetTable()">清空</button>
+            </div>
+
+            <div class="summary">
+                總單重：<span id="totalWeight">0</span> kg<br>
+                <strong>總單價合計：<span id="totalCost" class="highlight">$0</span></strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── 發布需求 Modal ── -->
+    <div id="req-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:1000; align-items:center; justify-content:center;">
+        <div
+            style="background:white; width:100%; max-width:480px; border-radius:4px; box-shadow:0 20px 60px rgba(0,0,0,0.3); overflow:hidden;">
+            <div
+                style="background:#1a2b49; color:white; padding:20px 24px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div
+                        style="font-size:10px; letter-spacing:0.2em; color:#D12329; font-weight:bold; margin-bottom:4px;">
+                        PUBLISH REQUEST</div>
+                    <h2 style="margin:0; font-size:18px; font-weight:700;">發布採購需求</h2>
+                </div>
+                <button onclick="closeModal()"
+                    style="background:none; border:none; color:white; font-size:22px; cursor:pointer; padding:0; line-height:1;">×</button>
+            </div>
+            <div style="padding:24px; display:flex; flex-direction:column; gap:16px;">
+                <div>
+                    <label
+                        style="display:block; font-size:10px; font-weight:bold; color:#888; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">估價總金額</label>
+                    <div id="modal-total" style="font-size:22px; font-weight:900; color:#D12329;">$0</div>
+                </div>
+                <div>
+                    <label
+                        style="display:block; font-size:10px; font-weight:bold; color:#888; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">期望完成時間</label>
+                    <input type="date" id="req-date"
+                        style="width:100%; padding:10px; border:1px solid #ddd; border-radius:3px; font-size:14px; outline:none; box-sizing:border-box;">
+                </div>
+                <div>
+                    <label
+                        style="display:block; font-size:10px; font-weight:bold; color:#888; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">發布範圍</label>
+                    <select id="req-region"
+                        style="width:100%; padding:10px; border:1px solid #ddd; border-radius:3px; font-size:14px; outline:none;">
+                        <option value="all">全台供應商</option>
+                        <option value="north">北部（北北基桃竹宜）</option>
+                        <option value="central">中部（苗中彰投雲）</option>
+                        <option value="south">南部（嘉南高屏）</option>
+                        <option value="east">東部（花東）</option>
+                    </select>
+                </div>
+                <div>
+                    <label
+                        style="display:block; font-size:10px; font-weight:bold; color:#888; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">預算上限
+                        (NT$)</label>
+                    <input type="number" id="req-budget" placeholder="例：50000"
+                        style="width:100%; padding:10px; border:1px solid #ddd; border-radius:3px; font-size:14px; outline:none; box-sizing:border-box;">
+                </div>
+                <div>
+                    <label
+                        style="display:block; font-size:10px; font-weight:bold; color:#888; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">聯絡方式</label>
+                    <input type="text" id="req-contact" placeholder="電話 或 Email"
+                        style="width:100%; padding:10px; border:1px solid #ddd; border-radius:3px; font-size:14px; outline:none; box-sizing:border-box;">
+                </div>
+                <div>
+                    <label
+                        style="display:block; font-size:10px; font-weight:bold; color:#888; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">特殊備註</label>
+                    <textarea id="req-note" rows="3" placeholder="例：需陽極處理、指定材料廠牌..."
+                        style="width:100%; padding:10px; border:1px solid #ddd; border-radius:3px; font-size:14px; outline:none; resize:vertical; box-sizing:border-box; font-family:inherit;"></textarea>
+                </div>
+            </div>
+            <div
+                style="padding:16px 24px; border-top:1px solid #eee; display:grid; grid-template-columns:1fr 2fr; gap:10px;">
+                <button onclick="closeModal()"
+                    style="padding:12px; background:white; border:1px solid #ddd; border-radius:3px; font-size:13px; cursor:pointer; color:#666; font-family:inherit;">取消</button>
+                <button onclick="submitRequest()"
+                    style="padding:12px; background:#D12329; color:white; border:none; border-radius:3px; font-size:13px; font-weight:bold; cursor:pointer; font-family:inherit; letter-spacing:0.05em;">確認發布需求</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal() {
+            const total = document.getElementById('totalCost')?.innerText || '$0';
+            document.getElementById('modal-total').innerText = total;
+            const modal = document.getElementById('req-modal');
+            modal.style.display = 'flex';
+        }
+        function closeModal() {
+            document.getElementById('req-modal').style.display = 'none';
+        }
+        function submitRequest() {
+            const date = document.getElementById('req-date').value;
+            const region = document.getElementById('req-region').value;
+            const budget = document.getElementById('req-budget').value;
+            const contact = document.getElementById('req-contact').value;
+            const note = document.getElementById('req-note').value;
+            if (!date) { alert('請填寫期望完成時間'); return; }
+            if (!contact) { alert('請填寫聯絡方式'); return; }
+            // TODO: 串接後端 API POST /api/requests/submit
+            console.log('[發布需求]', { date, region, budget, contact, note });
+            closeModal();
+            alert('✅ 需求已發布！供應商將收到通知。');
+        }
+        // 點遮罩關閉
+        document.getElementById('req-modal').addEventListener('click', function (e) {
+            if (e.target === this) closeModal();
+        });
+    </script>
+
+    <script>
+        /* ── Data ── */
+        const materialDB = {
+            'al_5083': { density: 3.0, priceId: 'p_al_5083', type: 'al' },
+            'al_6061_cn': { density: 3.0, priceId: 'p_al_6061_cn', type: 'al' },
+            'al_6061_kr': { density: 3.0, priceId: 'p_al_6061_kr', type: 'al' },
+            'al_6061_round': { density: 3.0, priceId: 'p_al_6061_round', type: 'al' },
+            'al_jp': { density: 3.0, priceId: 'p_al_jp', type: 'al' },
+            'fe_s45c': { density: 8.0, priceId: 'p_fe_s45c', type: 'fe' },
+            'fe_skd11': { density: 8.0, priceId: 'p_fe_skd11', type: 'fe' },
+            'fe_sus303': { density: 8.0, priceId: 'p_fe_sus303', type: 'sus' },
+            'fe_sus304': { density: 8.0, priceId: 'p_fe_sus304', type: 'sus' },
+            'fe_chrome': { density: 8.0, priceId: 'p_fe_chrome', type: 'fe' },
+            'cu': { density: 9.0, priceId: 'p_cu', type: 'other' },
+            'plastic': { density: 1.2, priceId: 'p_plastic', type: 'other' },
+            'bakelite': { density: 1.4, priceId: 'p_bakelite', type: 'other' }
+        };
+
+        const feMachOptions = [
+            { val: 'none', text: '無', factor: 0, min: 130 },
+            { val: 'f2', text: '銑2面 (x4.0)', factor: 4.0, min: 130 },
+            { val: 'f2g2', text: '銑2研2 (x5.0)', factor: 5.0, min: 130 },
+            { val: 'f4', text: '銑4面 (x4.5)', factor: 4.5, min: 130 },
+            { val: 'f4g4', text: '銑4研4 (x6.0)', factor: 6.0, min: 140 },
+            { val: 'a_f6', text: '銑6面 (x5.0)', factor: 5.0, min: 130 },
+            { val: 'b_f6g2', text: '銑6研2 (x6.0)', factor: 6.0, min: 150 },
+            { val: 'c_f6g4', text: '銑6研4 (x6.5)', factor: 6.5, min: 170 },
+            { val: 'd_f6g6', text: '銑6研6 (x7.0)', factor: 7.0, min: 200 }
+        ];
+        const sus304MachOptions = [
+            { val: 'none', text: '無', factor: 0, min: 200 },
+            { val: 'mill_6', text: '銑六面 (x16)', factor: 16, min: 200 }
+        ];
+        const alMachOptions = [
+            { val: 'none', text: '無', factor: 0, min: 80 },
+            { val: 'thk_no', text: '厚度不銑 (x2.5)', factor: 2.5, min: 80 },
+            { val: 'mill_6', text: '銑六面 (x3.5)', factor: 3.5, min: 80 },
+            { val: 'clamp_f4', text: '壓板銑4面 (x4.5)', factor: 4.5, min: 200 },
+            { val: 'clamp_f6', text: '壓板銑6面 (x5.2)', factor: 5.2, min: 200 }
+        ];
+        const alSurfaceOptions = [
+            { val: 'none', text: '無', rate: 0 },
+            { val: 'natural', text: '陽極本色 (0.2)', rate: 0.2 },
+            { val: 'matte', text: '陽極霧本 (0.25)', rate: 0.25 },
+            { val: 'black', text: '陽極黑色 (0.3)', rate: 0.3 },
+            { val: 'hard', text: '硬化陽極 (0.4)', rate: 0.4 }
+        ];
+
+        /* ── Init ── */
+        window.onload = function () {
+            const saved = localStorage.getItem('cnc_quoteData_v1');
+            if (saved) { loadFromLocal(); } else { addNewItem(); }
+        };
+
+        function saveToLocal() {
+            const table = document.getElementById('quoteTable');
+            table.querySelectorAll('input, select').forEach(el => {
+                if (el.type === 'checkbox') {
+                    el.checked ? el.setAttribute('checked', 'checked') : el.removeAttribute('checked');
+                } else {
+                    el.setAttribute('value', el.value);
+                }
+            });
+            table.querySelectorAll('select').forEach(sel => {
+                sel.querySelectorAll('option').forEach(opt => {
+                    opt.value === sel.value ? opt.setAttribute('selected', 'selected') : opt.removeAttribute('selected');
+                });
+            });
+            localStorage.setItem('cnc_quoteData_v1', table.querySelector('tbody').innerHTML);
+        }
+
+        function loadFromLocal() {
+            const content = localStorage.getItem('cnc_quoteData_v1');
+            if (content && content.trim()) {
+                document.querySelector('#quoteTable tbody').innerHTML = content;
+                calculateAll();
+            } else { addNewItem(); }
+        }
+
+        function smartEval(input) {
+            const val = input.value.trim();
+            if (!val) return;
+            if (/[+\-*/]/.test(val)) {
+                try {
+                    const r = eval(val.replace(/[^0-9+\-*/.()]/g, ''));
+                    if (!isNaN(r) && isFinite(r)) input.value = Math.round(r * 100) / 100;
+                } catch (e) { }
+            }
+            validateInput(input);
+        }
+
+        function validateInput(input) {
+            const v = parseFloat(input.value);
+            if (isNaN(v) || v < 0) input.value = 0;
+            calculateAll();
+        }
+
+        function exportToExcel() {
+            let csv = '\uFEFF件號,總單價\n';
+            document.querySelectorAll('.main-row').forEach(row => {
+                const no = row.querySelector('input[placeholder="件號"]')?.value || '未命名';
+                const pri = row.querySelector('.total-price-display')?.innerText.replace(/[$,]/g, '') || '0';
+                csv += `${no},${pri}\n`;
+            });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+            a.download = 'CNC估價單.csv';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+
+        /* ── Render helpers ── */
+        function renderMachInput(row, matType, matKey) {
+            const cell = row.querySelector('.mach-cell');
+            const existSel = cell.querySelector('select');
+            const curVal = existSel ? existSel.value : 'none';
+            const wasChecked = cell.querySelector('.clamp-check')?.checked || false;
+            cell.innerHTML = '';
+
+            const select = document.createElement('select');
+            select.className = 'mach-select'; select.style.width = '100%';
+            select.onchange = calculateAll;
+
+            let opts = (matKey === 'fe_sus304') ? sus304MachOptions :
+                (matType === 'al' || matKey === 'bakelite') ? alMachOptions : feMachOptions;
+
+            opts.forEach(o => {
+                const opt = document.createElement('option');
+                opt.value = o.val; opt.text = o.text; select.appendChild(opt);
+            });
+            if (opts.some(o => o.val === curVal)) select.value = curVal;
+            cell.appendChild(select);
+
+            if (matType === 'fe' || matType === 'sus') {
+                const addon = document.getElementById('p_fe_clamp_addon')?.value || 3.0;
+                const div = document.createElement('div'); div.className = 'clamp-wrapper';
+                div.innerHTML = `<label class="clamp-label"><input type="checkbox" class="clamp-check" onchange="calculateAll()" ${wasChecked ? 'checked' : ''}> 🗜️ 壓板 (+x${addon})</label>`;
+                cell.appendChild(div);
+            }
+        }
+
+        function renderSurfaceInput(row, matType) {
+            const cell = row.querySelector('.surf-cell');
+            cell.innerHTML = '';
+            if (matType === 'al') {
+                const div = document.createElement('div'); div.className = 'checkbox-group';
+                alSurfaceOptions.forEach(o => {
+                    div.innerHTML += `<label><input type="checkbox" class="surf-al-check" value="${o.val}" onclick="toggleExclusive(this,'surf-al-check')"> ${o.text}</label>`;
+                });
+                cell.appendChild(div);
+            } else if (matType === 'fe' || matType === 'sus') {
+                const div = document.createElement('div'); div.className = 'checkbox-group';
+                div.innerHTML = `
+                <label><input type="checkbox" class="surf-fe-check" value="chrome" onchange="calculateAll()"> 鍍鉻</label>
+                <label><input type="checkbox" class="surf-fe-check" value="heat"   onchange="calculateAll()"> 熱處理</label>
+                <label><input type="checkbox" class="surf-fe-check" value="nickel" onchange="calculateAll()"> 化鎳</label>`;
+                cell.appendChild(div);
+            } else { cell.innerText = '-'; }
+        }
+
+        function toggleExclusive(box, cls) {
+            if (box.checked) {
+                box.closest('.checkbox-group').querySelectorAll('.' + cls).forEach(b => {
+                    if (b !== box) { b.checked = false; b.removeAttribute('checked'); }
+                });
+            }
+            calculateAll();
+        }
+
+        function handleMatChange(sel) {
+            const row = sel.closest('.main-row');
+            let matKey = sel.value;
+            let matType = materialDB[matKey].type;
+            const shape = sel.closest('tbody').querySelector('.shape-select').value;
+            const chromeOpt = sel.querySelector('option[value="fe_chrome"]');
+            if (shape === 'block') {
+                chromeOpt.disabled = true;
+                if (matKey === 'fe_chrome') { sel.value = 'fe_s45c'; matKey = 'fe_s45c'; matType = 'fe'; }
+            }
+            renderMachInput(row, matType, matKey);
+            const surfCell = row.querySelector('.surf-cell');
+            surfCell.innerHTML = '';
+            if (matKey === 'bakelite') { surfCell.innerText = '-'; } else { renderSurfaceInput(row, matType); }
+            calculateAll();
+        }
+
+        function handleShapeChange(sel) {
+            const tbody = sel.closest('tbody');
+            const shape = sel.value;
+            const dimH = tbody.querySelector('.dim-h');
+            const dimW = tbody.querySelector('.dim-w');
+            const matSel = tbody.querySelector('.mat-select');
+            const chrome = matSel.querySelector('option[value="fe_chrome"]');
+            const alOpts = matSel.querySelectorAll('optgroup[label="鋁合金"] option');
+
+            if (shape === 'round') {
+                dimH.value = ''; dimH.disabled = true; dimH.placeholder = '-'; dimW.placeholder = '直徑';
+                chrome.disabled = false; chrome.style.display = '';
+                alOpts.forEach(o => { o.hidden = o.disabled = (o.value !== 'al_6061_round'); });
+                if (matSel.value.startsWith('al_') && matSel.value !== 'al_6061_round') matSel.value = 'al_6061_round';
+            } else {
+                dimH.disabled = false; dimH.placeholder = '厚度'; dimW.placeholder = '寬';
+                chrome.disabled = true; chrome.style.display = 'none';
+                if (matSel.value === 'fe_chrome') matSel.value = 'fe_s45c';
+                alOpts.forEach(o => { o.hidden = o.disabled = (o.value === 'al_6061_round'); });
+                if (matSel.value === 'al_6061_round') matSel.value = 'al_5083';
+            }
+            handleMatChange(matSel);
+        }
+
+        function addNewItem() {
+            const table = document.getElementById('quoteTable');
+            const count = table.querySelectorAll('tbody.item-group').length + 1;
+            const newTbody = document.createElement('tbody');
+            newTbody.className = 'item-group';
+            newTbody.innerHTML = `
+            <tr class="main-row">
+                <td>${count}</td>
+                <td><select class="shape-select" onchange="handleShapeChange(this)">
+                    <option value="block">板材</option>
+                    <option value="round">圓棒</option>
+                </select></td>
+                <td><input type="text" placeholder="件號" onchange="calculateAll()"></td>
+                <td><select class="mat-select" onchange="handleMatChange(this)">
+                    <optgroup label="鋁合金">
+                        <option value="al_5083">5083</option>
+                        <option value="al_6061_cn">6061中鋁</option>
+                        <option value="al_6061_kr">6061韓板</option>
+                        <option value="al_6061_round" hidden disabled>6061圓棒</option>
+                        <option value="al_jp">A69/日本</option>
+                    </optgroup>
+                    <optgroup label="鋼鐵">
+                        <option value="fe_s45c">S45C</option>
+                        <option value="fe_skd11">SKD11</option>
+                        <option value="fe_sus303">SUS303</option>
+                        <option value="fe_sus304">SUS304</option>
+                        <option value="fe_chrome" style="display:none;" disabled>鍍鉻棒</option>
+                    </optgroup>
+                    <optgroup label="其他">
+                        <option value="cu">黃銅</option>
+                        <option value="plastic">塑膠</option>
+                        <option value="bakelite">電木</option>
+                    </optgroup>
+                </select></td>
+                <td class="mach-cell"></td>
+                <td class="surf-cell"></td>
+                <td><input type="number" class="dim-h" placeholder="厚" min="0" onchange="validateInput(this)"></td>
+                <td><input type="number" class="dim-w" placeholder="寬" min="0" onchange="validateInput(this)"></td>
+                <td><input type="number" class="dim-l" placeholder="長" min="0" onchange="validateInput(this)"></td>
+                <td class="res-weight">-</td>
+                <td class="res-total">-</td>
+                <td><button onclick="deleteItem(this)" class="btn-sm btn-reset" style="width:100%;">x</button></td>
+            </tr>
+            <tr class="sub-row">
+                <td colspan="12">
+                    <div class="details-wrapper">
+                        <div class="holes-panel">
+                            <div class="panel-header">🕳️ 孔加工 <span class="cost-badge hole-cost-display">$0</span></div>
+                            <div class="hole-grid">
+                                <div class="hole-item"><label>牙孔</label><input type="text" class="hole-tap smart-input" placeholder="0" onchange="smartEval(this)"></div>
+                                <div class="hole-item"><label>沉頭</label><input type="text" class="hole-cb  smart-input" placeholder="0" onchange="smartEval(this)"></div>
+                                <div class="hole-item"><label>鑽孔</label><input type="text" class="hole-drill smart-input" placeholder="0" onchange="smartEval(this)"></div>
+                                <div class="hole-item"><label>Pin孔</label><input type="text" class="hole-pin smart-input" placeholder="0" onchange="smartEval(this)"></div>
+                            </div>
+                            <div class="profit-box">
+                                <span class="profit-label">預估淨利</span>
+                                <span class="profit-val profit-display">$0</span>
+                            </div>
+                        </div>
+                        <div class="cuts-panel">
+                            <div class="panel-header">⏱️ 切削工序
+                                <div>
+                                    <span class="time-badge cut-time-display">0分</span>
+                                    <span class="cost-badge cut-cost-display">$0</span>
+                                </div>
+                            </div>
+                            <table class="cuts-table">
+                                <thead><tr>
+                                    <th>長L</th><th>寬W</th><th>深H</th><th>刀D</th>
+                                    <th>吃%</th><th>每刀Z</th><th>進給F</th><th>數量</th>
+                                    <th>耗時(分)</th><th>費用</th><th>刪</th>
+                                </tr></thead>
+                                <tbody class="cut-rows-container"></tbody>
+                            </table>
+                            <button class="btn-sm btn-add-cut" onclick="addCutRow(this)">+ 新增切削區域</button>
+                        </div>
+                    </div>
+                </td>
+            </tr>`;
+            table.appendChild(newTbody);
+            const row = newTbody.querySelector('.main-row');
+            renderMachInput(row, 'al', 'al_5083');
+            renderSurfaceInput(row, 'al');
+            addCutRow(newTbody.querySelector('.btn-add-cut'));
+        }
+
+        function addCutRow(btn) {
+            const container = btn.previousElementSibling.querySelector('tbody');
+            const mainRow = btn.closest('tr').previousElementSibling;
+            const matKey = mainRow.querySelector('.mat-select').value;
+            const matType = materialDB[matKey].type;
+            const isHard = (matType === 'fe' || matType === 'sus');
+
+            const tr = document.createElement('tr'); tr.className = 'cut-row';
+            tr.innerHTML = `
+            <td><input type="number" class="c-l"    placeholder="L" min="0" onchange="validateInput(this)"></td>
+            <td><input type="number" class="c-w"    placeholder="W" min="0" onchange="validateInput(this)"></td>
+            <td><input type="number" class="c-h"    placeholder="H" min="0" onchange="validateInput(this)"></td>
+            <td><input type="number" class="c-d"    value="10"  min="0" onchange="validateInput(this)"></td>
+            <td><input type="number" class="c-step" value="${isHard ? 60 : 80}"  min="0" onchange="validateInput(this)"></td>
+            <td><input type="number" class="c-z"    value="${isHard ? 3 : 2}"   min="0" onchange="validateInput(this)"></td>
+            <td><input type="number" class="c-f"    value="${isHard ? 500 : 1200}" min="0" onchange="validateInput(this)"></td>
+            <td><input type="number" class="c-qty"  value="1"   min="1" onchange="validateInput(this)"></td>
+            <td class="row-cut-time time-cell">-</td>
+            <td class="row-cut-cost" style="font-size:12px; color:#555;">-</td>
+            <td><button onclick="removeCutRow(this)" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">×</button></td>`;
+            container.appendChild(tr);
+            calculateAll();
+        }
+
+        function removeCutRow(btn) { btn.closest('tr').remove(); calculateAll(); }
+        function deleteItem(btn) { btn.closest('tbody').remove(); calculateAll(); }
+        function resetTable() {
+            if (confirm('確定要清空所有工件嗎？')) { localStorage.removeItem('cnc_quoteData_v1'); location.reload(); }
+        }
+
+        /* ── Main calculate ── */
+        function calculateAll() {
+            const gv = id => parseFloat(document.getElementById(id)?.value) || 0;
+
+            const p_tap_al = gv('h_tap_al'), p_tap_fe = gv('h_tap_fe');
+            const p_cb_al = gv('h_cb_al'), p_cb_fe = gv('h_cb_fe'), p_cb_sus = gv('h_cb_sus');
+            const p_drill_al = gv('h_drill_al'), p_drill_fe = gv('h_drill_fe'), p_drill_other = gv('h_drill_other');
+            const p_pin_al = gv('h_pin_al'), p_pin_fe = gv('h_pin_fe');
+            const p_plate = gv('p_fe_plate') || 0.5, p_heat = gv('p_fe_heat') || 80, p_nickel = gv('p_fe_nickel') || 70;
+            const p_cut_base_soft = gv('p_cut_base_soft') || 80, p_cut_soft = gv('p_cut_soft') || 30;
+            const p_cut_base_hard = gv('p_cut_base_hard') || 130, p_cut_hard = gv('p_cut_hard') || 50;
+            const p_fe_clamp_addon = gv('p_fe_clamp_addon') || 3.0;
+
+            document.querySelectorAll('.clamp-label').forEach(label => {
+                const cb = label.querySelector('input');
+                label.innerHTML = ''; label.appendChild(cb);
+                label.append(` 🗜️ 壓板 (+x${p_fe_clamp_addon})`);
+            });
+
+            let grandTotal = 0, grandWeight = 0;
+
+            document.querySelectorAll('tbody.item-group').forEach(group => {
+                const shape = group.querySelector('.shape-select').value;
+                const matKey = group.querySelector('.mat-select').value;
+                const H = Math.max(0, parseFloat(group.querySelector('.dim-h').value) || 0);
+                const W = Math.max(0, parseFloat(group.querySelector('.dim-w').value) || 0);
+                const L = Math.max(0, parseFloat(group.querySelector('.dim-l').value) || 0);
+
+                if (shape === 'block' && (!L || !W || !H)) return;
+                if (shape === 'round' && (!L || !W)) return;
+
+                const matData = materialDB[matKey];
+                const { density, type: matType } = matData;
+                let unitPrice = parseFloat(document.getElementById(matData.priceId)?.value) || 0;
+                let warningHtml = '';
+
+                // Spec-based pricing
+                if (matKey === 'al_5083') {
+                    if (H >= 10 && H <= 55) unitPrice = 195;
+                    else if (H >= 56 && H <= 81) unitPrice = 200;
+                    else warningHtml += `<span class="warning-text">⚠️ 規格外 (預設$195)</span>`;
+                } else if (matKey === 'al_6061_cn') {
+                    if (!(H >= 10 && H <= 55)) warningHtml += `<span class="warning-text">⚠️ 規格外 (預設$210)</span>`;
+                } else if (matKey === 'al_6061_kr') {
+                    if (!(H >= 8 && H <= 20)) warningHtml += `<span class="warning-text">⚠️ 規格外 (預設$220)</span>`;
+                } else if (matKey === 'al_6061_round') {
+                    const base = unitPrice;
+                    if (W < 13) unitPrice = base - 5;
+                    else if (W < 89) unitPrice = base + 5;
+                    else if (W < 101.6) unitPrice = base + 15;
+                    else if (W < 112) unitPrice = base + 20;
+                    else unitPrice = base + 25;
+                } else if (matKey === 'al_jp') {
+                    if (H <= 3) unitPrice = 320;
+                    else if (H <= 6) unitPrice = 270;
+                    else if (H >= 8 && H <= 20) unitPrice = 250;
+                    else warningHtml += `<span class="warning-text">⚠️ 規格外</span>`;
+                } else if (matKey === 'fe_s45c' && shape === 'block') {
+                    if (H >= 6 && H <= 105) unitPrice = (W >= 105) ? 60 : 80;
+                    else warningHtml += `<span class="warning-text">⚠️ 規格外</span>`;
+                } else if (matKey === 'fe_skd11') {
+                    let spec = false;
+                    if ((H >= 4.6 && H <= 6.5)) { unitPrice = 330; spec = true; }
+                    else if ((H >= 9.5 && H <= 11)) { unitPrice = 200; spec = true; }
+                    else if (H >= 13.5 && H <= 105 && W >= 82) { unitPrice = W >= 611 ? 220 : 200; spec = true; }
+                    if (!spec) warningHtml += `<span class="warning-text">⚠️ 規格外</span>`;
+                }
+
+                // Weight
+                const weight = shape === 'block'
+                    ? (L * W * H / 1e6) * density
+                    : (Math.PI * (W / 2) ** 2 * L / 1e6) * density;
+
+                // Material cost
+                let costMat = weight * unitPrice;
+                let minMsg = '';
+                if (matType === 'al' && costMat < 30) { costMat = 30; minMsg = `<span class="min-charge-text">(低消$30)</span>`; }
+                if (matKey === 'bakelite' && weight < 0.015) { costMat = 50; minMsg = `<span class="min-charge-text">(低消$50)</span>`; }
+
+                // Machining cost
+                let costMach = 0;
+                const machSel = group.querySelector('.mach-select');
+                if (machSel) {
+                    const val = machSel.value;
+                    const opts = matKey === 'fe_sus304' ? sus304MachOptions :
+                        (matType === 'al' || matKey === 'bakelite') ? alMachOptions : feMachOptions;
+                    const opt = opts.find(o => o.val === val);
+                    if (opt) {
+                        let calcW = W;
+                        if (shape === 'block') {
+                            if (L > 1500 && W < 350) calcW = 370;
+                            else if (L > 1000 && W < 300) calcW = 320;
+                            else if (L > 700 && W < 200) calcW = 220;
+                            else if (L > 500 && W < 150) calcW = 170;
+                            else if (L >= 300 && W < 100) calcW = 120;
+                        }
+                        const area = (calcW * L) / 645;
+                        let factor = opt.factor, min = opt.min;
+                        const clamp = group.querySelector('.clamp-check');
+                        if (clamp?.checked) { factor += p_fe_clamp_addon; if (min < 200) min = 200; }
+                        const raw = area * factor;
+                        costMach = raw < min ? min : raw;
+                    } else {
+                        costMach = matKey === 'fe_sus304' ? 200 : matKey === 'bakelite' ? 100 : (matType === 'al' ? 80 : 130);
+                    }
+                }
+
+                // Surface cost
+                let costSurf = 0;
+                if (matType === 'fe' || matType === 'sus') {
+                    group.querySelectorAll('.surf-fe-check:checked').forEach(cb => {
+                        if (cb.value === 'chrome') {
+                            const area = shape === 'block'
+                                ? 2 * (L * W + L * H + W * H) / 100
+                                : (Math.PI * W * + 2 * Math.PI * (W / 2) ** 2) / 100;
+                            costSurf += Math.max(30, area * p_plate);
+                        } else if (cb.value === 'heat') {
+                            costSurf += Math.max(1, weight) * p_heat;
+                            if (weight > 10) warningHtml += `<span class="warning-text">⚠️ 大件熱處理請詢價</span>`;
+                        } else if (cb.value === 'nickel') {
+                            costSurf += weight * p_nickel;
+                        }
+                    });
+                } else if (matType === 'al') {
+                    group.querySelectorAll('.surf-al-check:checked').forEach(cb => {
+                        const opt = alSurfaceOptions.find(o => o.val === cb.value);
+                        if (opt?.rate) {
+                            const cH = Math.max(H, 13), cW = Math.max(W, 13);
+                            const raw = shape === 'block'
+                                ? L / 10 * cW / 10 * cH / 10 * opt.rate
+                                : L / 10 * (cW / 10) ** 2 * opt.rate;
+                            costSurf += Math.max(15, raw);
+                        }
+                    });
+                }
+
+                // Hole cost
+                const qTap = parseFloat(group.querySelector('.hole-tap').value) || 0;
+                const qCb = parseFloat(group.querySelector('.hole-cb').value) || 0;
+                const qDrill = parseFloat(group.querySelector('.hole-drill').value) || 0;
+                const qPin = parseFloat(group.querySelector('.hole-pin').value) || 0;
+
+                const pTap = matType === 'al' ? p_tap_al : p_tap_fe;
+                const pCb = matType === 'al' ? p_cb_al : matType === 'sus' ? p_cb_sus : p_cb_fe;
+                const pPin = matType === 'al' ? p_pin_al : p_pin_fe;
+                const pDrill = matKey === 'bakelite' ? p_drill_al + 5
+                    : matType === 'al' ? p_drill_al
+                        : (matType === 'fe' || matType === 'sus') ? p_drill_fe : p_drill_other;
+
+                const costHole = qTap * pTap + qCb * pCb + qDrill * pDrill + qPin * pPin;
+                group.querySelector('.hole-cost-display').innerText = `$${Math.round(costHole)}`;
+
+                // Cut cost
+                const isHardCut = (matType === 'fe' || matType === 'sus');
+                const baseCut = isHardCut ? p_cut_base_hard : p_cut_base_soft;
+                const perMin = isHardCut ? p_cut_hard : p_cut_soft;
+                let totalTimeMins = 0, sumRowCosts = 0;
+
+                group.querySelectorAll('.cut-row').forEach(row => {
+                    const cL = parseFloat(row.querySelector('.c-l').value) || 0;
+                    const cW = parseFloat(row.querySelector('.c-w').value) || 0;
+                    const cH = parseFloat(row.querySelector('.c-h').value) || 0;
+                    const cD = Math.max(0, parseFloat(row.querySelector('.c-d').value) || 10);
+                    const cStep = Math.max(0, parseFloat(row.querySelector('.c-step').value) || 80);
+                    const cZ = Math.max(0, parseFloat(row.querySelector('.c-z').value) || 2);
+                    const cF = Math.max(0, parseFloat(row.querySelector('.c-f').value) || 1200);
+                    const cQty = Math.max(1, parseFloat(row.querySelector('.c-qty').value) || 1);
+
+                    if (cL > 0 && cW > 0 && cF > 0) {
+                        const stepOver = cD * (cStep / 100);
+                        const passesXY = Math.max(1, Math.ceil(cW / stepOver));
+                        const passesZ = cH > 0 ? Math.ceil(cH / cZ) : 1;
+                        const totalPath = (passesXY * (cL + cD) + (passesXY > 1 ? (passesXY - 1) * stepOver : 0)) * passesZ;
+                        const mins = Math.max(0.1, totalPath / cF * 1.1) * cQty;
+                        const cost = mins * perMin;
+                        row.querySelector('.row-cut-time').innerText = `${mins.toFixed(1)}分`;
+                        row.querySelector('.row-cut-cost').innerText = `$${Math.round(cost)}`;
+                        totalTimeMins += mins; sumRowCosts += cost;
+                    } else {
+                        row.querySelector('.row-cut-time').innerText = '-';
+                        row.querySelector('.row-cut-cost').innerText = '-';
+                    }
+                });
+
+                const costCut = totalTimeMins > 0 ? baseCut + sumRowCosts : 0;
+                group.querySelector('.cut-cost-display').innerText = `$${Math.round(costCut)}`;
+                group.querySelector('.cut-time-display').innerText = `${totalTimeMins.toFixed(1)}分`;
+
+                const total = costMat + costMach + costSurf + costHole + costCut;
+                const profit = total - costMat - costSurf;
+                const pct = total > 0 ? (profit / total * 100) : 0;
+                const color = pct >= 40 ? '#28a745' : pct >= 25 ? '#fd7e14' : '#dc3545';
+
+                group.querySelector('.profit-display').innerHTML =
+                    `$${Math.round(profit).toLocaleString()} <span style="font-size:0.65em; background:${color}; color:white; padding:2px 8px; border-radius:12px;">${pct.toFixed(1)}%</span>`;
+                group.querySelector('.res-weight').innerText = weight.toFixed(3);
+                group.querySelector('.res-total').innerHTML = `
+                <span class="total-price-display">$${Math.round(total).toLocaleString()}</span>${minMsg}
+                <span class="sub-info-display">(材:${Math.round(costMat)} 工:${Math.round(costMach)} 表:${Math.round(costSurf)} 孔:${Math.round(costHole)} 切:${Math.round(costCut)})</span>
+                ${warningHtml}`;
+
+                grandTotal += total; grandWeight += weight;
+            });
+
+            document.getElementById('totalWeight').innerText = grandWeight.toFixed(3);
+            document.getElementById('totalCost').innerText = '$' + Math.round(grandTotal).toLocaleString();
+            saveToLocal();
+        }
+    </script>
+    <!-- ════════════════════════════════════════
+     AI FOUNDRY — 浮動對話視窗
+     使用方式：貼在任意頁面的 </body> 前
+     chat.html 的路徑依頁面層級調整：
+       主頁 (估價流程/) → chat.html
+       估價頁 (ai-foundry/) → ../chat.html
+════════════════════════════════════════ -->
+
+    <style>
+        /* ── Float trigger button ── */
+        .chat-float-btn {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 999;
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            background: #1a2b49;
+            color: white;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .chat-float-btn:hover {
+            background: #D12329;
+            transform: scale(1.08);
+        }
+
+        .chat-float-badge {
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            background: #D12329;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            border: 2px solid white;
+        }
+
+        /* ── Float popup ── */
+        .chat-float-popup {
+            position: fixed;
+            bottom: 94px;
+            right: 28px;
+            z-index: 998;
+            width: 340px;
+            height: 480px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+
+        .chat-float-popup.open {
+            display: flex;
+        }
+
+        .cfp-header {
+            background: #1a2b49;
+            color: white;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .cfp-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cfp-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #D12329;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .cfp-header h4 {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .cfp-header span {
+            font-size: 10px;
+            color: #94a3b8;
+        }
+
+        .cfp-header-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .cfp-icon-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        .cfp-icon-btn:hover {
+            color: white;
+        }
+
+        .cfp-conv-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .cfp-conv-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid #f8fafc;
+            transition: 0.15s;
+        }
+
+        .cfp-conv-item:hover {
+            background: #f8fafc;
+        }
+
+        .cfp-conv-item.active {
+            background: #fff0f0;
+        }
+
+        .cfp-conv-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #1a2b49;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .cfp-conv-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .cfp-conv-name {
+            font-size: 12px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
+        .cfp-conv-preview {
+            font-size: 10px;
+            color: #94a3b8;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 1px;
+        }
+
+        .cfp-unread {
+            background: #D12329;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 3px;
+            flex-shrink: 0;
+        }
+
+        .cfp-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #f8fafc;
+            display: none;
+        }
+
+        .cfp-msg {
+            display: flex;
+            gap: 8px;
+            max-width: 85%;
+        }
+
+        .cfp-msg.self {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .cfp-msg-bubble {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            border-top-left-radius: 3px;
+            padding: 8px 12px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .cfp-msg.self .cfp-msg-bubble {
+            background: #1a2b49;
+            color: white;
+            border: none;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 3px;
+        }
+
+        .cfp-msg-time {
+            font-size: 10px;
+            color: #94a3b8;
+            align-self: flex-end;
+        }
+
+        .cfp-input-area {
+            border-top: 1px solid #e5e7eb;
+            padding: 10px 12px;
+            display: none;
+            flex-shrink: 0;
+        }
+
+        .cfp-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .cfp-input {
+            flex: 1;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 8px 14px;
+            font-size: 12px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .cfp-input:focus {
+            border-color: #1a2b49;
+        }
+
+        .cfp-send {
+            background: #1a2b49;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .cfp-send:hover {
+            background: #D12329;
+        }
+
+        .cfp-back {
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 0 0 8px;
+            display: block;
+            font-family: inherit;
+        }
+
+        .cfp-back:hover {
+            color: #D12329;
+        }
+
+        .cfp-open-full {
+            display: block;
+            text-align: center;
+            padding: 8px;
+            font-size: 11px;
+            color: #94a3b8;
+            text-decoration: none;
+            border-top: 1px solid #f1f5f9;
+            background: white;
+            flex-shrink: 0;
+        }
+
+        .cfp-open-full:hover {
+            color: #D12329;
+        }
+    </style>
+
+    <!-- Trigger button -->
+    <button class="chat-float-btn" onclick="toggleChatFloat()" title="訊息中心">
+        💬
+        <span class="chat-float-badge" id="cfp-total-badge">3</span>
+    </button>
+
+    <!-- Popup -->
+    <div class="chat-float-popup" id="chat-float-popup">
+        <div class="cfp-header">
+            <div class="cfp-header-left">
+                <div class="cfp-avatar">💬</div>
+                <div>
+                    <h4>訊息中心</h4>
+                    <span id="cfp-subtitle">3 則未讀</span>
+                </div>
+            </div>
+            <div class="cfp-header-actions">
+                <button class="cfp-icon-btn" onclick="openFullChat()" title="開啟完整對話頁面">⛶</button>
+                <button class="cfp-icon-btn" onclick="toggleChatFloat()">✕</button>
+            </div>
+        </div>
+
+        <!-- Conversation list view -->
+        <div class="cfp-conv-list" id="cfp-conv-list"></div>
+
+        <!-- Single chat view (hidden by default) -->
+        <div class="cfp-messages" id="cfp-messages"></div>
+        <div class="cfp-input-area" id="cfp-input-area">
+            <button class="cfp-back" onclick="cfpBack()">← 返回列表</button>
+            <div class="cfp-input-row">
+                <input class="cfp-input" id="cfp-input" placeholder="輸入訊息..."
+                    onkeydown="if(event.key==='Enter'){cfpSend();}">
+                <button class="cfp-send" onclick="cfpSend()">傳送</button>
+            </div>
+        </div>
+
+        <a class="cfp-open-full" href="#" id="cfp-full-link">在完整頁面開啟 →</a>
+    </div>
+
+    <script>
+        (function () {
+            const CFP_CONVS = [
+                {
+                    id: 1, name: '台中精密科技', initial: '台', unread: 2, lastMsg: '好的，我們可以配合您的時程',
+                    messages: [
+                        { from: 'other', text: '請問尺寸公差要求是幾級？', time: '09:10' },
+                        { from: 'me', text: '需要 IT7 等級', time: '09:15' },
+                        { from: 'other', text: '好的，IT7 沒問題', time: '09:18' },
+                        { from: 'other', text: '好的，我們可以配合您的時程', time: '14:32' },
+                    ]
+                },
+                {
+                    id: 2, name: '南部鐵工所', initial: '南', unread: 0, lastMsg: '圖面已收到，明天回覆',
+                    messages: [
+                        { from: 'other', text: '您好，看到您發布的需求', time: '昨天' },
+                        { from: 'me', text: '需要 SS400 材質，10 組', time: '昨天' },
+                        { from: 'other', text: '圖面已收到，明天回覆', time: '昨天' },
+                    ]
+                },
+                {
+                    id: 3, name: '北部彩鋼工程行', initial: '北', unread: 1, lastMsg: '[圖片]',
+                    messages: [
+                        { from: 'other', text: '針對您的鐵皮廠房需求，我們有興趣接洽', time: '3天前' },
+                        { from: 'me', text: '好的，廠房 20m × 40m', time: '3天前' },
+                    ]
+                },
+            ];
+
+            let cfpActiveId = null;
+
+            // Detect page depth for full chat link
+            const isSubPage = window.location.pathname.includes('/ai-foundry/');
+            const chatHref = isSubPage ? '../chat.html' : 'chat.html';
+            document.getElementById('cfp-full-link').href = chatHref;
+
+            function getTotalUnread() {
+                return CFP_CONVS.reduce((s, c) => s + c.unread, 0);
+            }
+
+            function updateBadge() {
+                const n = getTotalUnread();
+                const badge = document.getElementById('cfp-total-badge');
+                badge.textContent = n;
+                badge.style.display = n > 0 ? 'flex' : 'none';
+                document.getElementById('cfp-subtitle').textContent = n > 0 ? `${n} 則未讀` : '無新訊息';
+            }
+
+            function renderCfpList() {
+                document.getElementById('cfp-conv-list').innerHTML = CFP_CONVS.map(c => `
+            <div class="cfp-conv-item" onclick="cfpOpen(${c.id})">
+                <div class="cfp-conv-avatar">${c.initial}</div>
+                <div class="cfp-conv-info">
+                    <div class="cfp-conv-name">${c.name}</div>
+                    <div class="cfp-conv-preview">${c.lastMsg}</div>
+                </div>
+                ${c.unread > 0 ? `<div class="cfp-unread">${c.unread}</div>` : ''}
+            </div>`).join('');
+            }
+
+            window.cfpOpen = function (id) {
+                cfpActiveId = id;
+                const conv = CFP_CONVS.find(c => c.id === id);
+                conv.unread = 0;
+                updateBadge();
+
+                document.getElementById('cfp-conv-list').style.display = 'none';
+                document.getElementById('cfp-full-link').style.display = 'none';
+                const msgs = document.getElementById('cfp-messages');
+                const input = document.getElementById('cfp-input-area');
+                msgs.style.display = 'flex';
+                input.style.display = 'block';
+
+                msgs.innerHTML = conv.messages.map(m => `
+            <div class="cfp-msg ${m.from === 'me' ? 'self' : ''}">
+                <div class="cfp-msg-bubble">${m.text}</div>
+                <div class="cfp-msg-time">${m.time}</div>
+            </div>`).join('');
+                msgs.scrollTop = msgs.scrollHeight;
+                renderCfpList();
+            };
+
+            window.cfpBack = function () {
+                cfpActiveId = null;
+                document.getElementById('cfp-conv-list').style.display = 'block';
+                document.getElementById('cfp-full-link').style.display = 'block';
+                document.getElementById('cfp-messages').style.display = 'none';
+                document.getElementById('cfp-input-area').style.display = 'none';
+            };
+
+            window.cfpSend = function () {
+                const input = document.getElementById('cfp-input');
+                const text = input.value.trim();
+                if (!text || !cfpActiveId) return;
+                const conv = CFP_CONVS.find(c => c.id === cfpActiveId);
+                const now = new Date();
+                const t = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                conv.messages.push({ from: 'me', text, time: t });
+                conv.lastMsg = text;
+                input.value = '';
+                cfpOpen(cfpActiveId);
+
+                setTimeout(() => {
+                    conv.messages.push({ from: 'other', text: '收到，我們稍後回覆您。', time: t });
+                    conv.lastMsg = '收到，我們稍後回覆您。';
+                    if (cfpActiveId === conv.id) cfpOpen(cfpActiveId);
+                    else { conv.unread++; renderCfpList(); updateBadge(); }
+                }, 1500);
+            };
+
+            window.toggleChatFloat = function () {
+                const popup = document.getElementById('chat-float-popup');
+                popup.classList.toggle('open');
+                if (popup.classList.contains('open')) renderCfpList();
+            };
+
+            window.openFullChat = function () {
+                window.location.href = chatHref;
+            };
+
+            updateBadge();
+        })();
+    </script>
+
+</body>
+
+</html>

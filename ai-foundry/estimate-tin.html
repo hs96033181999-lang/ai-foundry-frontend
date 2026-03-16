@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鐵皮屋估價 — AI Foundry</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
+        :root { --red:#D12329; --navy:#1a2b49; }
+        *, *::before, *::after { box-sizing:border-box; }
+        body { font-family:'Noto Sans TC', sans-serif; background:#f4f6f9; margin:0; padding:0; color:#333; }
+
+        .topbar { background:var(--navy); color:white; padding:6px 24px; font-size:11px; display:flex; justify-content:flex-end; gap:24px; }
+        .topbar a { color:white; text-decoration:none; } .topbar a:hover { color:#ccc; }
+        .ticker-bar { background:#f0f0f0; border-bottom:1px solid #ddd; padding:4px 24px; font-size:10px; font-family:monospace; display:flex; gap:24px; align-items:center; }
+        .ticker-bar .live { color:var(--red); font-weight:bold; animation:pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        .main-nav { background:white; border-bottom:1px solid #e5e7eb; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+        .main-nav-inner { max-width:1200px; margin:0 auto; padding:0 24px; height:64px; display:flex; align-items:center; justify-content:space-between; }
+        .logo { font-size:22px; font-weight:900; color:var(--navy); text-decoration:none; letter-spacing:-0.05em; }
+        .logo span { color:var(--red); }
+        .breadcrumb { font-size:12px; color:#888; }
+        .breadcrumb a { color:#888; text-decoration:none; } .breadcrumb a:hover { color:var(--red); }
+        .breadcrumb span { margin:0 6px; }
+
+        .page-wrap { max-width:1200px; margin:0 auto; padding:24px; }
+        .page-header { background:var(--navy); color:white; padding:20px 28px; border-radius:4px 4px 0 0; display:flex; align-items:center; justify-content:space-between; }
+        .page-header h1 { margin:0; font-size:20px; font-weight:700; }
+        .page-header .badge { background:var(--red); font-size:10px; font-weight:bold; padding:3px 10px; border-radius:2px; letter-spacing:0.1em; }
+        .container { background:white; padding:24px; box-shadow:0 2px 12px rgba(0,0,0,0.08); border-radius:0 0 4px 4px; }
+
+        /* Settings */
+        .settings-panel { background:#fff3cd; border:1px solid #ffeeba; padding:16px; border-radius:4px; margin-bottom:16px; display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:16px; }
+        .price-section h4 { margin:0 0 8px; font-size:13px; color:#856404; border-bottom:1px dashed #dcb262; padding-bottom:3px; }
+        .price-row { display:flex; flex-wrap:wrap; gap:8px; }
+        .price-input-group { display:flex; align-items:center; background:white; padding:2px 6px; border-radius:4px; border:1px solid #ddd; }
+        .price-input-group label { font-size:12px; font-weight:bold; color:#333; margin-right:5px; white-space:nowrap; }
+        .price-input-group input { width:70px; border:none; text-align:right; font-weight:bold; color:#007bff; font-size:13px; outline:none; background:transparent; }
+
+        /* Rules */
+        .rules-panel { background:#d1ecf1; border:1px solid #bee5eb; color:#0c5460; padding:10px 15px; margin-bottom:16px; border-radius:4px; font-size:12px; display:flex; flex-wrap:wrap; gap:10px; }
+        .rule-item { display:flex; align-items:center; gap:4px; font-weight:bold; }
+
+        /* Table */
+        table { width:100%; border-collapse:separate; border-spacing:0; margin-bottom:0; }
+        input[type="number"], input[type="text"], select {
+            width:100%; padding:5px; font-size:13px; border:1px solid #ccc; border-radius:3px; font-weight:bold;
+        }
+        input:focus, select:focus { border-color:var(--red); outline:none; background:#fff8f8; }
+
+        #quoteTable th { background:var(--navy); color:white; padding:10px 6px; text-align:center; position:sticky; top:0; z-index:10; font-size:13px; }
+        #quoteTable td { padding:6px; text-align:center; vertical-align:middle; border-bottom:1px solid #ddd; border-right:1px solid #ddd; }
+        #quoteTable td:first-child { border-left:1px solid #ddd; }
+        #quoteTable tbody tr:last-child td { border-bottom:2px solid var(--navy); }
+        #quoteTable tbody tr:hover td { background:#fafcff; }
+
+        .res-total { font-size:1.1em; color:var(--red); font-weight:bold; }
+        .sub-info { font-size:0.75em; color:#666; display:block; margin-top:2px; background:#f0f0f0; padding:2px 4px; border-radius:2px; }
+
+        .btn-group { margin-top:20px; display:flex; gap:10px; flex-wrap:wrap; }
+        button { padding:10px 20px; cursor:pointer; border:none; border-radius:3px; font-size:14px; transition:0.2s; color:white; font-family:inherit; }
+        .btn-add   { background:#28a745; } .btn-add:hover   { background:#1e7e34; }
+        .btn-calc  { background:var(--navy); flex-grow:1; } .btn-calc:hover  { background:#111e33; }
+        .btn-reset { background:#dc3545; } .btn-reset:hover { background:#b02030; }
+        .btn-excel { background:#17a2b8; } .btn-excel:hover { background:#117a8b; }
+        .btn-back  { background:transparent; color:var(--navy); border:2px solid var(--navy); font-size:13px; padding:8px 18px; }
+        .btn-back:hover { background:var(--navy); color:white; }
+        .btn-del   { background:none; border:none; color:var(--red); cursor:pointer; font-size:18px; padding:2px 6px; }
+        .btn-del:hover { color:#8b0000; }
+
+        .summary { margin-top:20px; text-align:right; font-size:1.2em; border-top:2px solid var(--navy); padding-top:10px; }
+        .highlight { color:var(--red); font-weight:bold; font-size:1.4em; }
+    </style>
+</head>
+<body>
+<div class="topbar">
+    <a href="#">加入我們</a><a href="#">投資人關係</a><span>|</span><span style="color:var(--red); font-weight:bold;">繁體中文</span>
+</div>
+<div class="ticker-bar">
+    <span class="live">● LIVE PRICES (NT$/m²):</span>
+    <span>鍍鋅板: <b>依厚度</b></span>
+    <span>彩鋼板: <b>依厚度</b></span>
+    <span>隔熱夾心: <b>依規格</b></span>
+</div>
+<nav class="main-nav">
+    <div class="main-nav-inner">
+        <a href="index.html" class="logo">AI <span>FOUNDRY</span></a>
+        <div class="breadcrumb">
+            <a href="index.html">首頁</a><span>›</span>
+            <span style="color:#333; font-weight:bold;">鐵皮屋估價</span>
+        </div>
+    </div>
+</nav>
+
+<div class="page-wrap">
+    <div class="page-header">
+        <h1>🏗️ 鐵皮屋工程估價</h1>
+        <span class="badge">ESTIMATION</span>
+    </div>
+    <div class="container">
+
+        <!-- Material Price Settings -->
+        <div class="settings-panel">
+            <div class="price-section">
+                <h4>屋面板材單價 (NT$/m²)</h4>
+                <div class="price-row">
+                    <div class="price-input-group"><label>鍍鋅 0.4mm</label><input type="number" id="p_gz_04" value="320" min="0" onchange="calculateAll()"></div>
+                    <div class="price-input-group"><label>鍍鋅 0.6mm</label><input type="number" id="p_gz_06" value="420" min="0" onchange="calculateAll()"></div>
+                    <div class="price-input-group"><label>彩鋼板 0.4</label><input type="number" id="p_cs_04" value="380" min="0" onchange="calculateAll()"></div>
+                    <div class="price-input-group"><label>彩鋼板 0.6</label><input type="number" id="p_cs_06" value="490" min="0" onchange="calculateAll()"></div>
+                    <div class="price-input-group"><label>隔熱夾心板</label><input type="number" id="p_ins" value="850" min="0" onchange="calculateAll()"></div>
+                </div>
+            </div>
+            <div class="price-section">
+                <h4>結構與施工費 (NT$/m²建築面積)</h4>
+                <div class="price-row">
+                    <div class="price-input-group"><label>輕鋼架結構</label><input type="number" id="p_frame" value="1200" min="0" onchange="calculateAll()"></div>
+                    <div class="price-input-group"><label>施工人工費</label><input type="number" id="p_labor" value="800" min="0" onchange="calculateAll()"></div>
+                    <div class="price-input-group"><label>雜項/運費(%)</label><input type="number" id="p_misc_pct" value="10" min="0" max="100" onchange="calculateAll()"></div>
+                </div>
+            </div>
+            <div class="price-section">
+                <h4>門窗開口加工費 (NT$/個)</h4>
+                <div class="price-row">
+                    <div class="price-input-group"><label>一般鐵捲門</label><input type="number" id="p_door_roll" value="8000" min="0" onchange="calculateAll()"></div>
+                    <div class="price-input-group"><label>橫拉門</label><input type="number" id="p_door_slide" value="5000" min="0" onchange="calculateAll()"></div>
+                    <div class="price-input-group"><label>採光窗</label><input type="number" id="p_window" value="2500" min="0" onchange="calculateAll()"></div>
+                    <div class="price-input-group"><label>通風口</label><input type="number" id="p_vent" value="1200" min="0" onchange="calculateAll()"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="rules-panel">
+            <div class="rule-item">📐 屋面積依屋型自動計算（含斜面）</div>
+            <div class="rule-item">🏗️ 結構費依建築面積（底面）計算</div>
+            <div class="rule-item">🔄 雙斜屋頂斜面面積 = 底面 × 1.15 ~ 1.25</div>
+            <div class="rule-item">💡 隔熱夾心板自動含施工費加成</div>
+            <div class="rule-item">📦 雜項費用依總材料+施工費比例加計</div>
+        </div>
+
+        <table id="quoteTable">
+            <thead>
+                <tr>
+                    <th width="3%">#</th>
+                    <th width="12%">案件名稱</th>
+                    <th width="8%">長(m)</th>
+                    <th width="8%">寬(m)</th>
+                    <th width="8%">高(m)</th>
+                    <th width="10%">屋型</th>
+                    <th width="12%">板材種類</th>
+                    <th width="6%">鐵捲門</th>
+                    <th width="6%">橫拉門</th>
+                    <th width="6%">採光窗</th>
+                    <th width="6%">通風口</th>
+                    <th width="6%">數量</th>
+                    <th width="15%">估價 (NT$)</th>
+                    <th width="4%">刪</th>
+                </tr>
+            </thead>
+            <tbody id="quoteBody"></tbody>
+        </table>
+
+        <div class="btn-group">
+            <button class="btn-back" onclick="window.location.href='../ai-foundry.html'">← 返回選單</button>
+            <button class="btn-add" onclick="addRow()">+ 新增工程</button>
+            <button class="btn-excel" onclick="exportCSV()">📥 匯出 CSV</button>
+            <button style="background:#D12329; padding:10px 20px; color:white; border:none; border-radius:3px; font-size:14px; cursor:pointer; font-family:inherit;" onclick="openModal()">📢 發布需求</button>
+            <button class="btn-calc" onclick="calculateAll()">⚡ 重新計算</button>
+            <button class="btn-reset" onclick="resetTable()">清空</button>
+        </div>
+
+        <div class="summary">
+            總建築面積：<span id="totalArea">0</span> m²<br>
+            <strong>工程估價合計：<span id="totalCost" class="highlight">$0</span></strong>
+        </div>
+    </div>
+</div>
+
+<!-- ── 發布需求 Modal ── -->
+<div id="req-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; width:100%; max-width:480px; border-radius:4px; box-shadow:0 20px 60px rgba(0,0,0,0.3); overflow:hidden;">
+        <div style="background:#1a2b49; color:white; padding:20px 24px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <div style="font-size:10px; letter-spacing:0.2em; color:#D12329; font-weight:bold; margin-bottom:4px;">PUBLISH REQUEST</div>
+                <h2 style="margin:0; font-size:18px; font-weight:700;">發布採購需求</h2>
+            </div>
+            <button onclick="closeModal()" style="background:none; border:none; color:white; font-size:22px; cursor:pointer; padding:0; line-height:1;">×</button>
+        </div>
+        <div style="padding:24px; display:flex; flex-direction:column; gap:16px;">
+            <div>
+                <label style="display:block; font-size:10px; font-weight:bold; color:#888; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">估價總金額</label>
+                <div id="modal-total" style="font-size:22px; font-weight:900; color:#D12329;">$0</div>
+            </div>
+            <div>
+                <label style="display:block; font-size:10px; font-weight:bold; color:#888; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">期望完成時間</label>
+                <input type="date" id="req-date" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:3px; font-size:14px; outline:none; box-sizing:border-box;">
+            </div>
+            <div>
+                <label style="display:block; font-size:10px; font-weight:bold; color:#888; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">發布範圍</label>
+                <select id="req-region" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:3px; font-size:14px; outline:none;">
+                    <option value="all">全台供應商</option>
+                    <option value="north">北部（北北基桃竹宜）</option>
+                    <option value="central">中部（苗中彰投雲）</option>
+                    <option value="south">南部（嘉南高屏）</option>
+                    <option value="east">東部（花東）</option>
+                </select>
+            </div>
+            <div>
+                <label style="display:block; font-size:10px; font-weight:bold; color:#888; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">預算上限 (NT$)</label>
+                <input type="number" id="req-budget" placeholder="例：500000" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:3px; font-size:14px; outline:none; box-sizing:border-box;">
+            </div>
+            <div>
+                <label style="display:block; font-size:10px; font-weight:bold; color:#888; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">聯絡方式</label>
+                <input type="text" id="req-contact" placeholder="電話 或 Email" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:3px; font-size:14px; outline:none; box-sizing:border-box;">
+            </div>
+            <div>
+                <label style="display:block; font-size:10px; font-weight:bold; color:#888; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">特殊備註</label>
+                <textarea id="req-note" rows="3" placeholder="例：指定工法、材料規格需求..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:3px; font-size:14px; outline:none; resize:vertical; box-sizing:border-box; font-family:inherit;"></textarea>
+            </div>
+        </div>
+        <div style="padding:16px 24px; border-top:1px solid #eee; display:grid; grid-template-columns:1fr 2fr; gap:10px;">
+            <button onclick="closeModal()" style="padding:12px; background:white; border:1px solid #ddd; border-radius:3px; font-size:13px; cursor:pointer; color:#666; font-family:inherit;">取消</button>
+            <button onclick="submitRequest()" style="padding:12px; background:#D12329; color:white; border:none; border-radius:3px; font-size:13px; font-weight:bold; cursor:pointer; font-family:inherit; letter-spacing:0.05em;">確認發布需求</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openModal() {
+        const total = document.getElementById('totalCost')?.innerText || '$0';
+        document.getElementById('modal-total').innerText = total;
+        const modal = document.getElementById('req-modal');
+        modal.style.display = 'flex';
+    }
+    function closeModal() {
+        document.getElementById('req-modal').style.display = 'none';
+    }
+    function submitRequest() {
+        const date    = document.getElementById('req-date').value;
+        const region  = document.getElementById('req-region').value;
+        const budget  = document.getElementById('req-budget').value;
+        const contact = document.getElementById('req-contact').value;
+        const note    = document.getElementById('req-note').value;
+        if (!date)    { alert('請填寫期望完成時間'); return; }
+        if (!contact) { alert('請填寫聯絡方式'); return; }
+        // TODO: 串接後端 API POST /api/requests/submit
+        console.log('[發布需求]', { date, region, budget, contact, note });
+        closeModal();
+        alert('✅ 需求已發布！供應商將收到通知。');
+    }
+    document.getElementById('req-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+</script>
+
+<script>
+    const ROOF_FACTOR = { flat:1.0, single:1.12, double:1.20 };
+
+    const MAT_OPTS = [
+        { val:'gz_04', label:'鍍鋅板 0.4mm', priceId:'p_gz_04' },
+        { val:'gz_06', label:'鍍鋅板 0.6mm', priceId:'p_gz_06' },
+        { val:'cs_04', label:'彩鋼板 0.4mm', priceId:'p_cs_04' },
+        { val:'cs_06', label:'彩鋼板 0.6mm', priceId:'p_cs_06' },
+        { val:'ins',   label:'隔熱夾心板',   priceId:'p_ins'   },
+    ];
+
+    let rowCount = 0;
+
+    window.onload = function() {
+        const saved = localStorage.getItem('tin_quoteData_v1');
+        if (saved) {
+            try { document.getElementById('quoteBody').innerHTML = saved; calculateAll(); return; } catch(e) {}
+        }
+        addRow();
+    };
+
+    function addRow() {
+        rowCount++;
+        const id = rowCount;
+        const matOpts = MAT_OPTS.map(m => `<option value="${m.val}">${m.label}</option>`).join('');
+        const tr = document.createElement('tr');
+        tr.dataset.id = id;
+        tr.innerHTML = `
+            <td>${id}</td>
+            <td><input type="text" placeholder="案件名稱" onchange="calculateAll()"></td>
+            <td><input type="number" class="r-len" placeholder="長" min="0" step="0.1" onchange="calculateAll()"></td>
+            <td><input type="number" class="r-wid" placeholder="寬" min="0" step="0.1" onchange="calculateAll()"></td>
+            <td><input type="number" class="r-hgt" placeholder="高" min="0" step="0.1" onchange="calculateAll()"></td>
+            <td><select class="r-roof" onchange="calculateAll()">
+                <option value="flat">平頂</option>
+                <option value="single">單斜</option>
+                <option value="double" selected>雙斜</option>
+            </select></td>
+            <td><select class="r-mat" onchange="calculateAll()">${matOpts}</select></td>
+            <td><input type="number" class="r-door-roll"  value="0" min="0" onchange="calculateAll()"></td>
+            <td><input type="number" class="r-door-slide" value="0" min="0" onchange="calculateAll()"></td>
+            <td><input type="number" class="r-window"     value="0" min="0" onchange="calculateAll()"></td>
+            <td><input type="number" class="r-vent"       value="0" min="0" onchange="calculateAll()"></td>
+            <td><input type="number" class="r-qty"        value="1" min="1" onchange="calculateAll()"></td>
+            <td class="res-total">—</td>
+            <td><button class="btn-del" onclick="this.closest('tr').remove(); calculateAll()">×</button></td>`;
+        document.getElementById('quoteBody').appendChild(tr);
+        calculateAll();
+    }
+
+    function gv(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+
+    function calculateAll() {
+        const p_frame    = gv('p_frame');
+        const p_labor    = gv('p_labor');
+        const p_misc_pct = gv('p_misc_pct') / 100;
+        const p_door_roll  = gv('p_door_roll');
+        const p_door_slide = gv('p_door_slide');
+        const p_window     = gv('p_window');
+        const p_vent       = gv('p_vent');
+
+        let grandTotal = 0, grandArea = 0;
+
+        document.querySelectorAll('#quoteBody tr').forEach(row => {
+            const L   = Math.max(0, parseFloat(row.querySelector('.r-len')?.value)  || 0);
+            const W   = Math.max(0, parseFloat(row.querySelector('.r-wid')?.value)  || 0);
+            const H   = Math.max(0, parseFloat(row.querySelector('.r-hgt')?.value)  || 0);
+            const qty = Math.max(1, parseInt(row.querySelector('.r-qty')?.value)    || 1);
+            if (!L || !W) { row.querySelector('.res-total').innerHTML = '—'; return; }
+
+            const roofType  = row.querySelector('.r-roof')?.value || 'double';
+            const matVal    = row.querySelector('.r-mat')?.value  || 'gz_04';
+            const matInfo   = MAT_OPTS.find(m => m.val === matVal);
+            const matPrice  = gv(matInfo?.priceId || 'p_gz_04');
+
+            // Areas
+            const floorArea = L * W;
+            const wallArea  = 2*(L+W)*H;
+            const roofFactor= ROOF_FACTOR[roofType] || 1.0;
+            const roofArea  = floorArea * roofFactor;
+
+            // Add wall + gable area for perimeter panels
+            // Simplified: total cladding = roof + walls (4 sides)
+            const totalCladArea = roofArea + wallArea;
+
+            // Costs
+            let costMat    = totalCladArea * matPrice;
+            // Insulation panel includes extra install premium
+            if (matVal === 'ins') costMat *= 1.15;
+
+            let costStruct = floorArea * p_frame;
+            let costLabor  = floorArea * p_labor;
+
+            const dRoll  = parseInt(row.querySelector('.r-door-roll')?.value)  || 0;
+            const dSlide = parseInt(row.querySelector('.r-door-slide')?.value) || 0;
+            const dWin   = parseInt(row.querySelector('.r-window')?.value)     || 0;
+            const dVent  = parseInt(row.querySelector('.r-vent')?.value)       || 0;
+            const costOpenings = dRoll*p_door_roll + dSlide*p_door_slide + dWin*p_window + dVent*p_vent;
+
+            const subtotal = costMat + costStruct + costLabor + costOpenings;
+            const costMisc = subtotal * p_misc_pct;
+            const unitTotal = subtotal + costMisc;
+            const total = unitTotal * qty;
+
+            grandTotal += total;
+            grandArea  += floorArea * qty;
+
+            const td = row.querySelector('.res-total');
+            td.innerHTML = `
+                <span class="res-total">$${Math.round(total).toLocaleString()}</span>
+                <span class="sub-info">板材:$${Math.round(costMat*qty).toLocaleString()} 結構:$${Math.round((costStruct+costLabor)*qty).toLocaleString()} 開口:$${Math.round(costOpenings*qty).toLocaleString()} 雜項:$${Math.round(costMisc*qty).toLocaleString()}</span>`;
+        });
+
+        document.getElementById('totalArea').innerText = grandArea.toFixed(1);
+        document.getElementById('totalCost').innerText = '$' + Math.round(grandTotal).toLocaleString();
+        saveToLocal();
+    }
+
+    function saveToLocal() {
+        // Save current DOM state
+        const el = document.getElementById('quoteBody');
+        // Persist input values into attributes before serializing
+        el.querySelectorAll('input, select').forEach(inp => {
+            if (inp.type === 'checkbox') { inp.checked ? inp.setAttribute('checked','checked') : inp.removeAttribute('checked'); }
+            else { inp.setAttribute('value', inp.value); }
+        });
+        el.querySelectorAll('select').forEach(sel => {
+            sel.querySelectorAll('option').forEach(opt => {
+                opt.value === sel.value ? opt.setAttribute('selected','selected') : opt.removeAttribute('selected');
+            });
+        });
+        localStorage.setItem('tin_quoteData_v1', el.innerHTML);
+    }
+
+    function resetTable() {
+        if (confirm('確定清空所有工程項目？')) { localStorage.removeItem('tin_quoteData_v1'); location.reload(); }
+    }
+
+    function exportCSV() {
+        let csv = '\uFEFF案件名稱,長(m),寬(m),高(m),屋型,板材,估價(NT$)\n';
+        document.querySelectorAll('#quoteBody tr').forEach(row => {
+            const name = row.querySelector('input[placeholder="案件名稱"]')?.value || '未命名';
+            const L = row.querySelector('.r-len')?.value || 0;
+            const W = row.querySelector('.r-wid')?.value || 0;
+            const H = row.querySelector('.r-hgt')?.value || 0;
+            const roof = row.querySelector('.r-roof')?.value || '';
+            const mat  = row.querySelector('.r-mat')?.value  || '';
+            const pri  = row.querySelector('.res-total span')?.innerText?.replace(/[$,]/g,'') || '0';
+            csv += `${name},${L},${W},${H},${roof},${mat},${pri}\n`;
+        });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+        a.download = '鐵皮屋估價單.csv';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+</script>
+<!-- ════════════════════════════════════════
+     AI FOUNDRY — 浮動對話視窗
+     使用方式：貼在任意頁面的 </body> 前
+     chat.html 的路徑依頁面層級調整：
+       主頁 (估價流程/) → chat.html
+       估價頁 (ai-foundry/) → ../chat.html
+════════════════════════════════════════ -->
+
+<style>
+/* ── Float trigger button ── */
+.chat-float-btn {
+    position:fixed; bottom:28px; right:28px; z-index:999;
+    width:54px; height:54px; border-radius:50%;
+    background:#1a2b49; color:white; border:none;
+    font-size:22px; cursor:pointer; box-shadow:0 4px 16px rgba(0,0,0,0.25);
+    display:flex; align-items:center; justify-content:center;
+    transition:transform 0.2s, background 0.2s;
+}
+.chat-float-btn:hover { background:#D12329; transform:scale(1.08); }
+.chat-float-badge {
+    position:absolute; top:-3px; right:-3px;
+    background:#D12329; color:white; font-size:10px; font-weight:bold;
+    min-width:18px; height:18px; border-radius:9px;
+    display:flex; align-items:center; justify-content:center; padding:0 4px;
+    border:2px solid white;
+}
+
+/* ── Float popup ── */
+.chat-float-popup {
+    position:fixed; bottom:94px; right:28px; z-index:998;
+    width:340px; height:480px;
+    background:white; border-radius:8px;
+    box-shadow:0 8px 40px rgba(0,0,0,0.18);
+    display:none; flex-direction:column; overflow:hidden;
+    border:1px solid #e5e7eb;
+}
+.chat-float-popup.open { display:flex; }
+
+.cfp-header {
+    background:#1a2b49; color:white; padding:14px 16px;
+    display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+}
+.cfp-header-left { display:flex; align-items:center; gap:10px; }
+.cfp-avatar { width:34px; height:34px; border-radius:50%; background:#D12329; color:white; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; }
+.cfp-header h4 { margin:0; font-size:13px; font-weight:700; }
+.cfp-header span { font-size:10px; color:#94a3b8; }
+.cfp-header-actions { display:flex; gap:6px; }
+.cfp-icon-btn { background:none; border:none; color:#94a3b8; font-size:14px; cursor:pointer; padding:2px; }
+.cfp-icon-btn:hover { color:white; }
+
+.cfp-conv-list { flex:1; overflow-y:auto; }
+.cfp-conv-item { display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer; border-bottom:1px solid #f8fafc; transition:0.15s; }
+.cfp-conv-item:hover { background:#f8fafc; }
+.cfp-conv-item.active { background:#fff0f0; }
+.cfp-conv-avatar { width:36px; height:36px; border-radius:50%; background:#1a2b49; color:white; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; flex-shrink:0; }
+.cfp-conv-info { flex:1; min-width:0; }
+.cfp-conv-name { font-size:12px; font-weight:bold; color:#1e293b; }
+.cfp-conv-preview { font-size:10px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+.cfp-unread { background:#D12329; color:white; font-size:10px; font-weight:bold; min-width:16px; height:16px; border-radius:8px; display:flex; align-items:center; justify-content:center; padding:0 3px; flex-shrink:0; }
+
+.cfp-messages { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px; background:#f8fafc; display:none; }
+.cfp-msg { display:flex; gap:8px; max-width:85%; }
+.cfp-msg.self { align-self:flex-end; flex-direction:row-reverse; }
+.cfp-msg-bubble { background:white; border:1px solid #e2e8f0; border-radius:10px; border-top-left-radius:3px; padding:8px 12px; font-size:12px; line-height:1.5; }
+.cfp-msg.self .cfp-msg-bubble { background:#1a2b49; color:white; border:none; border-top-left-radius:10px; border-top-right-radius:3px; }
+.cfp-msg-time { font-size:10px; color:#94a3b8; align-self:flex-end; }
+
+.cfp-input-area { border-top:1px solid #e5e7eb; padding:10px 12px; display:none; flex-shrink:0; }
+.cfp-input-row { display:flex; gap:8px; align-items:center; }
+.cfp-input { flex:1; border:1px solid #e2e8f0; border-radius:20px; padding:8px 14px; font-size:12px; font-family:inherit; outline:none; }
+.cfp-input:focus { border-color:#1a2b49; }
+.cfp-send { background:#1a2b49; color:white; border:none; border-radius:20px; padding:8px 14px; font-size:12px; font-weight:bold; cursor:pointer; font-family:inherit; }
+.cfp-send:hover { background:#D12329; }
+.cfp-back { background:none; border:none; color:#64748b; font-size:12px; cursor:pointer; padding:0 0 8px; display:block; font-family:inherit; }
+.cfp-back:hover { color:#D12329; }
+
+.cfp-open-full { display:block; text-align:center; padding:8px; font-size:11px; color:#94a3b8; text-decoration:none; border-top:1px solid #f1f5f9; background:white; flex-shrink:0; }
+.cfp-open-full:hover { color:#D12329; }
+</style>
+
+<!-- Trigger button -->
+<button class="chat-float-btn" onclick="toggleChatFloat()" title="訊息中心">
+    💬
+    <span class="chat-float-badge" id="cfp-total-badge">3</span>
+</button>
+
+<!-- Popup -->
+<div class="chat-float-popup" id="chat-float-popup">
+    <div class="cfp-header">
+        <div class="cfp-header-left">
+            <div class="cfp-avatar">💬</div>
+            <div>
+                <h4>訊息中心</h4>
+                <span id="cfp-subtitle">3 則未讀</span>
+            </div>
+        </div>
+        <div class="cfp-header-actions">
+            <button class="cfp-icon-btn" onclick="openFullChat()" title="開啟完整對話頁面">⛶</button>
+            <button class="cfp-icon-btn" onclick="toggleChatFloat()">✕</button>
+        </div>
+    </div>
+
+    <!-- Conversation list view -->
+    <div class="cfp-conv-list" id="cfp-conv-list"></div>
+
+    <!-- Single chat view (hidden by default) -->
+    <div class="cfp-messages" id="cfp-messages"></div>
+    <div class="cfp-input-area" id="cfp-input-area">
+        <button class="cfp-back" onclick="cfpBack()">← 返回列表</button>
+        <div class="cfp-input-row">
+            <input class="cfp-input" id="cfp-input" placeholder="輸入訊息..."
+                onkeydown="if(event.key==='Enter'){cfpSend();}">
+            <button class="cfp-send" onclick="cfpSend()">傳送</button>
+        </div>
+    </div>
+
+    <a class="cfp-open-full" href="#" id="cfp-full-link">在完整頁面開啟 →</a>
+</div>
+
+<script>
+(function() {
+    const CFP_CONVS = [
+        { id:1, name:'台中精密科技', initial:'台', unread:2, lastMsg:'好的，我們可以配合您的時程',
+          messages:[
+            { from:'other', text:'請問尺寸公差要求是幾級？', time:'09:10' },
+            { from:'me',    text:'需要 IT7 等級', time:'09:15' },
+            { from:'other', text:'好的，IT7 沒問題', time:'09:18' },
+            { from:'other', text:'好的，我們可以配合您的時程', time:'14:32' },
+          ]
+        },
+        { id:2, name:'南部鐵工所', initial:'南', unread:0, lastMsg:'圖面已收到，明天回覆',
+          messages:[
+            { from:'other', text:'您好，看到您發布的需求', time:'昨天' },
+            { from:'me',    text:'需要 SS400 材質，10 組', time:'昨天' },
+            { from:'other', text:'圖面已收到，明天回覆', time:'昨天' },
+          ]
+        },
+        { id:3, name:'北部彩鋼工程行', initial:'北', unread:1, lastMsg:'[圖片]',
+          messages:[
+            { from:'other', text:'針對您的鐵皮廠房需求，我們有興趣接洽', time:'3天前' },
+            { from:'me',    text:'好的，廠房 20m × 40m', time:'3天前' },
+          ]
+        },
+    ];
+
+    let cfpActiveId = null;
+
+    // Detect page depth for full chat link
+    const isSubPage = window.location.pathname.includes('/ai-foundry/');
+    const chatHref  = isSubPage ? '../chat.html' : 'chat.html';
+    document.getElementById('cfp-full-link').href = chatHref;
+
+    function getTotalUnread() {
+        return CFP_CONVS.reduce((s, c) => s + c.unread, 0);
+    }
+
+    function updateBadge() {
+        const n = getTotalUnread();
+        const badge = document.getElementById('cfp-total-badge');
+        badge.textContent = n;
+        badge.style.display = n > 0 ? 'flex' : 'none';
+        document.getElementById('cfp-subtitle').textContent = n > 0 ? `${n} 則未讀` : '無新訊息';
+    }
+
+    function renderCfpList() {
+        document.getElementById('cfp-conv-list').innerHTML = CFP_CONVS.map(c => `
+            <div class="cfp-conv-item" onclick="cfpOpen(${c.id})">
+                <div class="cfp-conv-avatar">${c.initial}</div>
+                <div class="cfp-conv-info">
+                    <div class="cfp-conv-name">${c.name}</div>
+                    <div class="cfp-conv-preview">${c.lastMsg}</div>
+                </div>
+                ${c.unread > 0 ? `<div class="cfp-unread">${c.unread}</div>` : ''}
+            </div>`).join('');
+    }
+
+    window.cfpOpen = function(id) {
+        cfpActiveId = id;
+        const conv = CFP_CONVS.find(c => c.id === id);
+        conv.unread = 0;
+        updateBadge();
+
+        document.getElementById('cfp-conv-list').style.display  = 'none';
+        document.getElementById('cfp-full-link').style.display  = 'none';
+        const msgs  = document.getElementById('cfp-messages');
+        const input = document.getElementById('cfp-input-area');
+        msgs.style.display  = 'flex';
+        input.style.display = 'block';
+
+        msgs.innerHTML = conv.messages.map(m => `
+            <div class="cfp-msg ${m.from==='me'?'self':''}">
+                <div class="cfp-msg-bubble">${m.text}</div>
+                <div class="cfp-msg-time">${m.time}</div>
+            </div>`).join('');
+        msgs.scrollTop = msgs.scrollHeight;
+        renderCfpList();
+    };
+
+    window.cfpBack = function() {
+        cfpActiveId = null;
+        document.getElementById('cfp-conv-list').style.display  = 'block';
+        document.getElementById('cfp-full-link').style.display  = 'block';
+        document.getElementById('cfp-messages').style.display   = 'none';
+        document.getElementById('cfp-input-area').style.display = 'none';
+    };
+
+    window.cfpSend = function() {
+        const input = document.getElementById('cfp-input');
+        const text  = input.value.trim();
+        if (!text || !cfpActiveId) return;
+        const conv = CFP_CONVS.find(c => c.id === cfpActiveId);
+        const now  = new Date();
+        const t    = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+        conv.messages.push({ from:'me', text, time:t });
+        conv.lastMsg = text;
+        input.value  = '';
+        cfpOpen(cfpActiveId);
+
+        setTimeout(() => {
+            conv.messages.push({ from:'other', text:'收到，我們稍後回覆您。', time:t });
+            conv.lastMsg = '收到，我們稍後回覆您。';
+            if (cfpActiveId === conv.id) cfpOpen(cfpActiveId);
+            else { conv.unread++; renderCfpList(); updateBadge(); }
+        }, 1500);
+    };
+
+    window.toggleChatFloat = function() {
+        const popup = document.getElementById('chat-float-popup');
+        popup.classList.toggle('open');
+        if (popup.classList.contains('open')) renderCfpList();
+    };
+
+    window.openFullChat = function() {
+        window.location.href = chatHref;
+    };
+
+    updateBadge();
+})();
+</script>
+
+</body>
+</html>

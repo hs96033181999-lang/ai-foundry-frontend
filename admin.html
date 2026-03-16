@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理後台 — AI Foundry</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
+
+        :root {
+            --red: #D12329;
+            --navy: #1a2b49;
+            --bg: #f4f6f9;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: var(--bg);
+            margin: 0;
+            color: #333;
+        }
+
+        .topbar {
+            background: var(--navy);
+            color: white;
+            padding: 0 24px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .topbar .logo {
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: -0.05em;
+        }
+
+        .topbar .logo span {
+            color: var(--red);
+        }
+
+        .topbar .admin-tag {
+            font-size: 10px;
+            font-weight: bold;
+            background: var(--red);
+            padding: 3px 10px;
+            border-radius: 2px;
+            letter-spacing: 0.1em;
+        }
+
+        .main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 28px 24px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 4px;
+            padding: 20px 24px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+            border-left: 4px solid transparent;
+        }
+
+        .stat-card.total {
+            border-color: #1a2b49;
+        }
+
+        .stat-card.supplier {
+            border-color: #3b82f6;
+        }
+
+        .stat-card.buyer {
+            border-color: #22c55e;
+        }
+
+        .stat-card.pending {
+            border-color: #f59e0b;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #94a3b8;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--navy);
+        }
+
+        .stat-sub {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .section-header h2 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--navy);
+            flex: 1;
+        }
+
+        .filter-btn {
+            padding: 6px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            background: white;
+            font-family: inherit;
+            color: #64748b;
+        }
+
+        .filter-btn.active {
+            background: var(--navy);
+            color: white;
+            border-color: var(--navy);
+        }
+
+        .search-input {
+            padding: 7px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 3px;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            width: 220px;
+        }
+
+        .search-input:focus {
+            border-color: var(--navy);
+        }
+
+        .refresh-btn {
+            padding: 6px 14px;
+            background: var(--navy);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            background: #f8fafc;
+            padding: 10px 16px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: bold;
+            color: #94a3b8;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border-bottom: 1px solid #f1f5f9;
+            white-space: nowrap;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #f8fafc;
+            cursor: pointer;
+        }
+
+        tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        tbody td {
+            padding: 12px 16px;
+            font-size: 13px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .badge-supplier {
+            background: #eff6ff;
+            color: #3b82f6;
+        }
+
+        .badge-buyer {
+            background: #f0fdf4;
+            color: #22c55e;
+        }
+
+        .badge-verified {
+            background: #f0fdf4;
+            color: #22c55e;
+        }
+
+        .badge-pending {
+            background: #fffbeb;
+            color: #f59e0b;
+        }
+
+        .badge-inactive {
+            background: #f8fafc;
+            color: #94a3b8;
+        }
+
+        .action-btn {
+            padding: 4px 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .btn-verify {
+            background: #eff6ff;
+            color: #3b82f6;
+        }
+
+        .btn-toggle-off {
+            background: #fff0f0;
+            color: var(--red);
+        }
+
+        .btn-toggle-on {
+            background: #f0fdf4;
+            color: #22c55e;
+        }
+
+        .empty-row td {
+            text-align: center;
+            color: #94a3b8;
+            padding: 32px;
+            font-size: 13px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            width: 100%;
+            max-width: 560px;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            background: var(--navy);
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .detail-item label {
+            font-size: 10px;
+            font-weight: bold;
+            color: #94a3b8;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .detail-item span {
+            font-size: 13px;
+            font-weight: bold;
+            color: #1e293b;
+            word-break: break-all;
+        }
+
+        .detail-full {
+            grid-column: 1/-1;
+        }
+
+        .modal-actions {
+            padding: 14px 20px;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            flex-shrink: 0;
+        }
+
+        .modal-btn {
+            padding: 9px 20px;
+            border-radius: 3px;
+            font-size: 13px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .modal-btn-verify {
+            background: var(--navy);
+            color: white;
+        }
+
+        .modal-btn-deact {
+            background: #fff0f0;
+            color: var(--red);
+            border: 1px solid #fecaca;
+        }
+
+        .modal-btn-close {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="topbar">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <div class="logo">AI <span>FOUNDRY</span></div>
+            <div class="admin-tag">ADMIN</div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="stats-grid">
+            <div class="stat-card total">
+                <div class="stat-label">總會員數</div>
+                <div class="stat-value" id="stat-total">—</div>
+                <div class="stat-sub">所有已註冊會員</div>
+            </div>
+            <div class="stat-card supplier">
+                <div class="stat-label">供應商</div>
+                <div class="stat-value" id="stat-supplier">—</div>
+                <div class="stat-sub">已審核：<span id="stat-verified">—</span></div>
+            </div>
+            <div class="stat-card buyer">
+                <div class="stat-label">需求端會員</div>
+                <div class="stat-value" id="stat-buyer">—</div>
+                <div class="stat-sub">即刻生效</div>
+            </div>
+            <div class="stat-card pending">
+                <div class="stat-label">待審核供應商</div>
+                <div class="stat-value" id="stat-pending">—</div>
+                <div class="stat-sub">等待審核中</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <h2>會員列表</h2>
+                <div style="display:flex; gap:6px;">
+                    <button class="filter-btn active" onclick="setFilter('',this)">全部</button>
+                    <button class="filter-btn" onclick="setFilter('supplier',this)">供應商</button>
+                    <button class="filter-btn" onclick="setFilter('buyer',this)">需求端</button>
+                </div>
+                <input class="search-input" id="search-input" placeholder="搜尋 Email / 公司名 / 電話..."
+                    oninput="debounceSearch()">
+                <button class="refresh-btn" onclick="loadAll()">↻ 重新整理</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>身份</th>
+                        <th>公司/姓名</th>
+                        <th>Email</th>
+                        <th>電話</th>
+                        <th>地區</th>
+                        <th>帳號狀態</th>
+                        <th>審核</th>
+                        <th>註冊時間</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="user-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">會員詳細資料</h3>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-grid" id="modal-content"></div>
+            </div>
+            <div class="modal-actions" id="modal-actions"></div>
+        </div>
+    </div>
+
+    <script>
+        const API = 'https://ai-foundry-backend-production.up.railway.app';
+        const ADMIN_KEY = 'ai-foundry-admin-2024';
+        let currentFilter = '';
+        let searchTimer = null;
+
+        function updateStats(data) {
+            document.getElementById('stat-total').textContent = data.total;
+            document.getElementById('stat-supplier').textContent = data.suppliers;
+            document.getElementById('stat-buyer').textContent = data.buyers;
+            document.getElementById('stat-pending').textContent = data.pending_verification;
+            document.getElementById('stat-verified').textContent = data.suppliers - data.pending_verification;
+        }
+
+        function loadStats() {
+            fetch(`${API}/admin/stats`, { headers: { 'x-admin-key': ADMIN_KEY } })
+                .then(r => r.json()).then(updateStats);
+        }
+
+        function loadAll() { loadStats(); loadUsers(); }
+
+        function setFilter(role, btn) {
+            currentFilter = role;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            loadUsers();
+        }
+
+        function debounceSearch() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(loadUsers, 400);
+        }
+
+        function loadUsers() {
+            const search = document.getElementById('search-input').value.trim();
+            let url = `${API}/admin/users?`;
+            if (currentFilter) url += `role=${currentFilter}&`;
+            if (search) url += `search=${encodeURIComponent(search)}`;
+            fetch(url, { headers: { 'x-admin-key': ADMIN_KEY } })
+                .then(r => r.json()).then(renderTable)
+                .catch(() => {
+                    document.getElementById('user-tbody').innerHTML =
+                        '<tr class="empty-row"><td colspan="10">載入失敗，請確認後端連線</td></tr>';
+                });
+        }
+
+        function renderTable(users) {
+            const tbody = document.getElementById('user-tbody');
+            if (!users.length) {
+                tbody.innerHTML = '<tr class="empty-row"><td colspan="10">目前沒有符合條件的會員</td></tr>';
+                return;
+            }
+            tbody.innerHTML = users.map(u => {
+                const isSupplier = u.role === 'supplier';
+                const name = u.company_name || u.owner_name || '—';
+                const region = u.region || u.city || '—';
+                const date = u.created_at ? u.created_at.substring(0, 10) : '—';
+                const statusBadge = !u.is_active
+                    ? `<span class="badge badge-inactive">已停用</span>`
+                    : isSupplier
+                        ? (u.is_verified ? `<span class="badge badge-verified">✓ 正常</span>` : `<span class="badge badge-pending">待審核</span>`)
+                        : `<span class="badge badge-verified">✓ 正常</span>`;
+                const verifyBtn = isSupplier && !u.is_verified && u.is_active
+                    ? `<button class="action-btn btn-verify" onclick="event.stopPropagation();quickVerify(${u.id})">審核通過</button>`
+                    : '—';
+                const toggleBtn = u.is_active
+                    ? `<button class="action-btn btn-toggle-off" onclick="event.stopPropagation();quickToggle(${u.id})">停用</button>`
+                    : `<button class="action-btn btn-toggle-on"  onclick="event.stopPropagation();quickToggle(${u.id})">啟用</button>`;
+                return `<tr onclick="openModal(${u.id})">
+            <td style="color:#94a3b8;">#${u.id}</td>
+            <td><span class="badge badge-${u.role}">${isSupplier ? '供應商' : '需求端'}</span></td>
+            <td style="font-weight:bold;">${name}</td>
+            <td>${u.email}</td>
+            <td>${u.phone || '—'}</td>
+            <td>${region}</td>
+            <td>${statusBadge}</td>
+            <td>${verifyBtn}</td>
+            <td style="color:#94a3b8;">${date}</td>
+            <td>${toggleBtn}</td>
+        </tr>`;
+            }).join('');
+        }
+
+        function quickVerify(id) {
+            fetch(`${API}/admin/users/${id}/verify`, { method: 'PATCH', headers: { 'x-admin-key': ADMIN_KEY } })
+                .then(() => loadAll());
+        }
+
+        function quickToggle(id) {
+            fetch(`${API}/admin/users/${id}/toggle`, { method: 'PATCH', headers: { 'x-admin-key': ADMIN_KEY } })
+                .then(() => loadAll());
+        }
+
+        function openModal(id) {
+            fetch(`${API}/admin/users/${id}`, { headers: { 'x-admin-key': ADMIN_KEY } })
+                .then(r => r.json())
+                .then(u => {
+                    const isSupplier = u.role === 'supplier';
+                    document.getElementById('modal-title').textContent =
+                        `${isSupplier ? '供應商' : '需求端'} — ${u.company_name || u.owner_name || u.email}`;
+                    const fields = [
+                        { label: 'Email', val: u.email },
+                        { label: '電話', val: u.phone },
+                        { label: '公司名稱', val: u.company_name || '—' },
+                        { label: '統一編號', val: u.tax_id || '—' },
+                        { label: '負責人', val: u.owner_name || '—' },
+                        { label: '地區', val: u.region || u.city || '—' },
+                        { label: '帳號狀態', val: u.is_active ? '✓ 正常' : '✗ 停用' },
+                        { label: '審核狀態', val: u.is_verified ? '✓ 已審核' : '待審核' },
+                    ];
+                    if (isSupplier) {
+                        fields.push(
+                            { label: '加工類型', val: u.process_types || '—', full: true },
+                            { label: '材質', val: u.materials || '—', full: true },
+                            { label: '月產能', val: u.capacity || '—' },
+                            { label: '設備', val: u.equipment || '—', full: true },
+                            { label: '地址', val: u.address || '—', full: true },
+                        );
+                    } else {
+                        fields.push(
+                            { label: '帳號類型', val: u.account_type === 'corp' ? '企業/工廠' : '個人/工作室' },
+                            { label: '需求類型', val: u.need_types || '—', full: true },
+                        );
+                    }
+                    if (u.note) fields.push({ label: '備註', val: u.note, full: true });
+
+                    document.getElementById('modal-content').innerHTML = fields.map(f =>
+                        `<div class="detail-item ${f.full ? 'detail-full' : ''}">
+                    <label>${f.label}</label><span>${f.val}</span>
+                </div>`
+                    ).join('');
+
+                    const actions = document.getElementById('modal-actions');
+                    actions.innerHTML = '';
+                    if (isSupplier && !u.is_verified)
+                        actions.innerHTML += `<button class="modal-btn modal-btn-verify" onclick="quickVerify(${u.id});closeModal()">✓ 審核通過</button>`;
+                    actions.innerHTML += `<button class="modal-btn modal-btn-deact" onclick="quickToggle(${u.id});closeModal()">${u.is_active ? '停用帳號' : '啟用帳號'}</button>`;
+                    actions.innerHTML += `<button class="modal-btn modal-btn-close" onclick="closeModal()">關閉</button>`;
+
+                    document.getElementById('modal').classList.add('open');
+                });
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('open');
+        }
+
+        // 頁面載入時自動拉資料
+        loadAll();
+    </script>
+</body>
+
+</html>

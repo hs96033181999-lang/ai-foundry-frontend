@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>供應商會員加入 — AI Foundry</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
+
+        :root {
+            --red: #D12329;
+            --navy: #1a2b49;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            color: #333;
+        }
+
+        /* Nav */
+        .topbar {
+            background: var(--navy);
+            color: white;
+            padding: 6px 24px;
+            font-size: 11px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 24px;
+        }
+
+        .topbar a {
+            color: white;
+            text-decoration: none;
+        }
+
+        .topbar a:hover {
+            color: #ccc;
+        }
+
+        .main-nav {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .main-nav-inner {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--navy);
+            text-decoration: none;
+            letter-spacing: -0.05em;
+        }
+
+        .logo span {
+            color: var(--red);
+        }
+
+        /* Hero */
+        .hero {
+            background: var(--navy);
+            color: white;
+            padding: 48px 24px;
+            text-align: center;
+        }
+
+        .hero .tag {
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 0.3em;
+            color: var(--red);
+            margin-bottom: 12px;
+        }
+
+        .hero h1 {
+            font-size: 32px;
+            font-weight: 900;
+            margin: 0 0 8px;
+        }
+
+        .hero p {
+            color: #94a3b8;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        /* Step indicator */
+        .steps-wrap {
+            max-width: 560px;
+            margin: 32px auto 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+        }
+
+        .step-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .step-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: bold;
+            border: 2px solid #334155;
+            color: #64748b;
+            transition: 0.3s;
+        }
+
+        .step-circle.active {
+            background: var(--red);
+            border-color: var(--red);
+            color: white;
+        }
+
+        .step-circle.done {
+            background: #22c55e;
+            border-color: #22c55e;
+            color: white;
+        }
+
+        .step-label {
+            font-size: 10px;
+            color: #64748b;
+            white-space: nowrap;
+        }
+
+        .step-label.active {
+            color: white;
+            font-weight: bold;
+        }
+
+        .step-line {
+            flex: 1;
+            height: 2px;
+            background: #334155;
+            margin: 0 8px;
+            margin-bottom: 20px;
+            min-width: 40px;
+        }
+
+        .step-line.done {
+            background: #22c55e;
+        }
+
+        /* Form container */
+        .form-wrap {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 32px 24px 60px;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .form-card-header {
+            background: var(--navy);
+            color: white;
+            padding: 16px 24px;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-card-header .step-num {
+            background: var(--red);
+            padding: 2px 8px;
+            border-radius: 2px;
+            font-size: 10px;
+        }
+
+        .form-body {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #888;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .field input,
+        .field select,
+        .field textarea {
+            padding: 11px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 3px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+        }
+
+        .field input:focus,
+        .field select:focus,
+        .field textarea:focus {
+            border-color: var(--red);
+        }
+
+        .field textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .required-star {
+            color: var(--red);
+            margin-left: 2px;
+        }
+
+        /* Checkbox group */
+        .check-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 3px;
+            padding: 7px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: 0.15s;
+        }
+
+        .check-item:hover {
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        .check-item input {
+            display: none;
+        }
+
+        .check-item.checked {
+            background: #fff0f0;
+            border-color: var(--red);
+            color: var(--red);
+        }
+
+        /* Buttons */
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            padding: 16px 24px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .btn {
+            padding: 11px 24px;
+            border: none;
+            border-radius: 3px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            transition: 0.2s;
+        }
+
+        .btn-prev {
+            background: white;
+            border: 1px solid #ddd;
+            color: #666;
+        }
+
+        .btn-prev:hover {
+            background: #f8fafc;
+        }
+
+        .btn-next {
+            background: var(--navy);
+            color: white;
+        }
+
+        .btn-next:hover {
+            background: #111e33;
+        }
+
+        .btn-submit {
+            background: var(--red);
+            color: white;
+        }
+
+        .btn-submit:hover {
+            background: #a81c21;
+        }
+
+        /* Success screen */
+        .success-screen {
+            display: none;
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .success-icon {
+            font-size: 56px;
+            margin-bottom: 16px;
+        }
+
+        .success-screen h2 {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--navy);
+            margin: 0 0 8px;
+        }
+
+        .success-screen p {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .success-screen .notice {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 3px;
+            padding: 12px 16px;
+            font-size: 13px;
+            color: #856404;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        /* Hidden */
+        .step-page {
+            display: none;
+        }
+
+        .step-page.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="topbar">
+        <a href="ai-foundry.html">首頁</a>
+        <span style="color:var(--red); font-weight:bold;">繁體中文</span>
+    </div>
+    <nav class="main-nav">
+        <div class="main-nav-inner">
+            <a href="ai-foundry.html" class="logo">AI <span>FOUNDRY</span></a>
+            <span style="font-size:12px; color:#888;">供應商會員申請</span>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <div class="tag">SUPPLIER REGISTRATION</div>
+        <h1>供應商會員加入</h1>
+        <p>完成註冊後即可接收平台採購需求，拓展您的訂單來源</p>
+
+        <div class="steps-wrap">
+            <div class="step-item">
+                <div class="step-circle active" id="sc1">1</div>
+                <div class="step-label active" id="sl1">公司基本資料</div>
+            </div>
+            <div class="step-line" id="line1"></div>
+            <div class="step-item">
+                <div class="step-circle" id="sc2">2</div>
+                <div class="step-label" id="sl2">加工能力設定</div>
+            </div>
+            <div class="step-line" id="line2"></div>
+            <div class="step-item">
+                <div class="step-circle" id="sc3">3</div>
+                <div class="step-label" id="sl3">確認送出</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-wrap">
+        <div class="form-card">
+
+            <!-- Step 1 -->
+            <div class="step-page active" id="page1">
+                <div class="form-card-header">
+                    <span class="step-num">STEP 01</span> 公司基本資料
+                </div>
+                <div class="form-body">
+                    <div class="field-row">
+                        <div class="field">
+                            <label>公司名稱 <span class="required-star">*</span></label>
+                            <input type="text" id="s-company" placeholder="XX 精密工業有限公司">
+                        </div>
+                        <div class="field">
+                            <label>統一編號 <span class="required-star">*</span></label>
+                            <input type="text" id="s-taxid" placeholder="12345678" maxlength="8">
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label>負責人姓名 <span class="required-star">*</span></label>
+                            <input type="text" id="s-owner" placeholder="王大明">
+                        </div>
+                        <div class="field">
+                            <label>聯絡人姓名</label>
+                            <input type="text" id="s-contact" placeholder="若與負責人相同可留空">
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field">
+                            <label>聯絡電話 <span class="required-star">*</span></label>
+                            <input type="tel" id="s-phone" placeholder="0912-345-678">
+                        </div>
+                        <div class="field">
+                            <label>電子信箱 <span class="required-star">*</span></label>
+                            <input type="email" id="s-email" placeholder="example@company.com">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>公司地址 <span class="required-star">*</span></label>
+                        <input type="text" id="s-address" placeholder="台中市西屯區XX路XX號">
+                    </div>
+                    <div class="field">
+                        <label>服務區域 <span class="required-star">*</span></label>
+                        <select id="s-region">
+                            <option value="">請選擇主要服務區域</option>
+                            <option value="all">全台</option>
+                            <option value="north">北部（北北基桃竹宜）</option>
+                            <option value="central">中部（苗中彰投雲）</option>
+                            <option value="south">南部（嘉南高屏）</option>
+                            <option value="east">東部（花東）</option>
+                        </select>
+                    </div>
+                    <div
+                        style="border-top:1px dashed #e2e8f0; padding-top:18px; display:flex; flex-direction:column; gap:18px;">
+                        <div class="field-row">
+                            <div class="field">
+                                <label>設定密碼 <span class="required-star">*</span></label>
+                                <input type="password" id="s-pw" placeholder="至少 8 碼">
+                            </div>
+                            <div class="field">
+                                <label>確認密碼 <span class="required-star">*</span></label>
+                                <input type="password" id="s-pw2" placeholder="再輸入一次">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-next" onclick="goStep(2)">下一步 →</button>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step-page" id="page2">
+                <div class="form-card-header">
+                    <span class="step-num">STEP 02</span> 加工能力設定
+                </div>
+                <div class="form-body">
+                    <div class="field">
+                        <label>加工類型 <span class="required-star">*</span>（可複選）</label>
+                        <div class="check-group" id="cg-type">
+                            <div class="check-item" data-val="cnc">⚙️ CNC 加工</div>
+                            <div class="check-item" data-val="tin">🏗️ 鐵皮屋工程</div>
+                            <div class="check-item" data-val="custom">🔧 客製化鐵製加工</div>
+                            <div class="check-item" data-val="weld">🔥 焊接結構件</div>
+                            <div class="check-item" data-val="sheet">📐 板金折板</div>
+                            <div class="check-item" data-val="surface">✨ 表面處理</div>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>可處理材質（可複選）</label>
+                        <div class="check-group" id="cg-mat">
+                            <div class="check-item" data-val="al">鋁合金</div>
+                            <div class="check-item" data-val="ss400">SS400 黑鐵</div>
+                            <div class="check-item" data-val="sus304">SUS304 白鐵</div>
+                            <div class="check-item" data-val="gz">鍍鋅板</div>
+                            <div class="check-item" data-val="cu">黃銅</div>
+                            <div class="check-item" data-val="other">其他</div>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>月產能（件/月）</label>
+                        <select id="s-capacity">
+                            <option value="">請選擇</option>
+                            <option value="small">100 件以下</option>
+                            <option value="mid">100 ~ 500 件</option>
+                            <option value="large">500 ~ 2000 件</option>
+                            <option value="xlarge">2000 件以上</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>設備簡述</label>
+                        <textarea id="s-equipment" placeholder="例：3軸CNC 2台、5軸1台、雷射切割機1台..."></textarea>
+                    </div>
+                    <div class="field">
+                        <label>備註 / 其他說明</label>
+                        <textarea id="s-note" placeholder="其他想讓平台了解的資訊"></textarea>
+                    </div>
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-prev" onclick="goStep(1)">← 上一步</button>
+                    <button class="btn btn-next" onclick="goStep(3)">下一步 →</button>
+                </div>
+            </div>
+
+            <!-- Step 3 確認 -->
+            <div class="step-page" id="page3">
+                <div class="form-card-header">
+                    <span class="step-num">STEP 03</span> 確認送出
+                </div>
+                <div class="form-body">
+                    <div id="review-content" style="font-size:13px; line-height:2; color:#444;"></div>
+                    <div
+                        style="background:#fff3cd; border:1px solid #ffeeba; border-radius:3px; padding:12px 16px; font-size:12px; color:#856404;">
+                        ⚠️ 送出後平台將於 <strong>1~3 個工作天</strong>內完成審核，審核結果將寄送至您填寫的電子信箱。
+                    </div>
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-prev" onclick="goStep(2)">← 上一步</button>
+                    <button class="btn btn-submit" onclick="submitForm()">確認送出申請</button>
+                </div>
+            </div>
+
+            <!-- Success -->
+            <div class="success-screen" id="success-screen">
+                <div class="success-icon">✅</div>
+                <h2>申請已送出！</h2>
+                <p>感謝您申請 AI Foundry 供應商會員<br>我們將在 1~3 個工作天內完成審核並通知您</p>
+                <div class="notice">📧 審核結果將發送至您填寫的 Email，請留意收件匣（含垃圾郵件）。</div>
+                <button class="btn btn-next" style="margin-top:8px;" onclick="window.location.href='ai-foundry.html'">←
+                    返回首頁</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+
+        function toggleCheck(el) {
+            el.classList.toggle('checked');
+        }
+
+        // Bind click to all check-items
+        document.querySelectorAll('.check-item').forEach(el => {
+            el.addEventListener('click', function () { toggleCheck(this); });
+        });
+
+        function getChecked(groupId) {
+            return [...document.querySelectorAll(`#${groupId} .check-item.checked`)]
+                .map(el => el.innerText.trim()).join('、') || '未選擇';
+        }
+
+        function goStep(n) {
+            // Validate current step
+            if (n > currentStep) {
+                if (currentStep === 1) {
+                    const required = ['s-company', 's-taxid', 's-owner', 's-phone', 's-email', 's-address', 's-region'];
+                    for (const id of required) {
+                        if (!document.getElementById(id).value.trim()) {
+                            alert('請填寫所有必填欄位（標有 * 者）'); return;
+                        }
+                    }
+                    const pw = document.getElementById('s-pw').value;
+                    const pw2 = document.getElementById('s-pw2').value;
+                    if (pw.length < 8) { alert('密碼至少需要 8 碼'); return; }
+                    if (pw !== pw2) { alert('兩次密碼輸入不一致'); return; }
+                }
+                if (currentStep === 2) {
+                    const anyType = document.querySelectorAll('#cg-type .check-item.checked').length > 0;
+                    if (!anyType) { alert('請至少選擇一種加工類型'); return; }
+                }
+            }
+
+            // Build review on step 3
+            if (n === 3) {
+                document.getElementById('review-content').innerHTML = `
+                <table style="width:100%; border-collapse:collapse;">
+                    <tr><td style="padding:6px 0; color:#888; width:40%;">公司名稱</td><td style="font-weight:bold;">${document.getElementById('s-company').value}</td></tr>
+                    <tr><td style="padding:6px 0; color:#888;">統一編號</td><td style="font-weight:bold;">${document.getElementById('s-taxid').value}</td></tr>
+                    <tr><td style="padding:6px 0; color:#888;">負責人</td><td style="font-weight:bold;">${document.getElementById('s-owner').value}</td></tr>
+                    <tr><td style="padding:6px 0; color:#888;">聯絡電話</td><td style="font-weight:bold;">${document.getElementById('s-phone').value}</td></tr>
+                    <tr><td style="padding:6px 0; color:#888;">電子信箱</td><td style="font-weight:bold;">${document.getElementById('s-email').value}</td></tr>
+                    <tr><td style="padding:6px 0; color:#888;">公司地址</td><td style="font-weight:bold;">${document.getElementById('s-address').value}</td></tr>
+                    <tr><td style="padding:6px 0; color:#888;">服務區域</td><td style="font-weight:bold;">${document.getElementById('s-region').options[document.getElementById('s-region').selectedIndex].text}</td></tr>
+                    <tr><td style="padding:6px 0; color:#888; border-top:1px dashed #eee;">加工類型</td><td style="font-weight:bold;">${getChecked('cg-type')}</td></tr>
+                    <tr><td style="padding:6px 0; color:#888;">可處理材質</td><td style="font-weight:bold;">${getChecked('cg-mat')}</td></tr>
+                    <tr><td style="padding:6px 0; color:#888;">設備簡述</td><td style="font-weight:bold;">${document.getElementById('s-equipment').value || '—'}</td></tr>
+                </table>`;
+            }
+
+            currentStep = n;
+            document.querySelectorAll('.step-page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`page${n}`).classList.add('active');
+            updateStepUI(n);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateStepUI(n) {
+            for (let i = 1; i <= 3; i++) {
+                const circle = document.getElementById(`sc${i}`);
+                const label = document.getElementById(`sl${i}`);
+                circle.classList.remove('active', 'done');
+                label.classList.remove('active');
+                if (i < n) { circle.classList.add('done'); circle.innerText = '✓'; }
+                else if (i === n) { circle.classList.add('active'); circle.innerText = i; label.classList.add('active'); }
+                else { circle.innerText = i; }
+            }
+            for (let i = 1; i <= 2; i++) {
+                document.getElementById(`line${i}`).classList.toggle('done', i < n);
+            }
+        }
+
+        function submitForm() {
+            const processTypes = [...document.querySelectorAll('#cg-type .check-item.checked')]
+                .map(el => el.dataset.val).join(',');
+            const materials = [...document.querySelectorAll('#cg-mat .check-item.checked')]
+                .map(el => el.dataset.val).join(',');
+
+            const payload = {
+                email: document.getElementById('s-email').value,
+                phone: document.getElementById('s-phone').value,
+                password: document.getElementById('s-pw') ? document.getElementById('s-pw').value : 'changeme123',
+                company_name: document.getElementById('s-company').value,
+                tax_id: document.getElementById('s-taxid').value,
+                owner_name: document.getElementById('s-owner').value,
+                address: document.getElementById('s-address').value,
+                region: document.getElementById('s-region').value,
+                process_types: processTypes,
+                materials: materials,
+                capacity: document.getElementById('s-capacity').value,
+                equipment: document.getElementById('s-equipment').value,
+                note: document.getElementById('s-note').value,
+            };
+
+            fetch('https://ai-foundry-backend-production.up.railway.app/auth/register/supplier', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    if (!ok) { alert('註冊失敗：' + (data.detail || '請稍後再試')); return; }
+                    localStorage.setItem('ai_foundry_token', data.access_token);
+                    localStorage.setItem('ai_foundry_user', JSON.stringify(data.user));
+                    document.querySelectorAll('.step-page').forEach(p => p.style.display = 'none');
+                    document.getElementById('success-screen').style.display = 'block';
+                })
+                .catch(() => alert('連線失敗，請確認後端伺服器是否運行中'));
+        }
+    </script>
+</body>
+
+</html>
