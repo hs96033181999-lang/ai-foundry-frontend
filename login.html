@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>會員登入 — AI Foundry</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
+
+        :root {
+            --red: #D12329;
+            --navy: #1a2b49;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Topbar ── */
+        .topbar {
+            background: var(--navy);
+            color: white;
+            padding: 6px 24px;
+            font-size: 11px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 24px;
+        }
+
+        .topbar a {
+            color: white;
+            text-decoration: none;
+            letter-spacing: 0.05em;
+        }
+
+        .topbar a:hover {
+            color: #ccc;
+        }
+
+        /* ── Navbar ── */
+        .main-nav {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .main-nav-inner {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--navy);
+            text-decoration: none;
+            letter-spacing: -0.05em;
+        }
+
+        .logo span {
+            color: var(--red);
+        }
+
+        /* ── Hero ── */
+        .hero {
+            background: var(--navy);
+            color: white;
+            padding: 48px 24px;
+            text-align: center;
+        }
+
+        .hero .tag {
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 0.3em;
+            color: var(--red);
+            margin-bottom: 12px;
+        }
+
+        .hero h1 {
+            font-size: 28px;
+            font-weight: 900;
+            margin: 0 0 8px;
+        }
+
+        .hero p {
+            color: #94a3b8;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        /* ── Card ── */
+        .card-wrap {
+            flex: 1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 48px 24px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            padding: 40px;
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--navy);
+            margin: 0 0 28px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        /* ── Form ── */
+        .field {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 0.1em;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 3px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+            color: #1e293b;
+        }
+
+        input:focus {
+            border-color: var(--navy);
+        }
+
+        .pw-wrap {
+            position: relative;
+        }
+
+        .pw-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #94a3b8;
+            font-size: 12px;
+            font-family: inherit;
+            padding: 0;
+        }
+
+        .pw-toggle:hover {
+            color: var(--navy);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 13px;
+            background: var(--navy);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            font-size: 14px;
+            font-weight: bold;
+            font-family: inherit;
+            cursor: pointer;
+            letter-spacing: 0.05em;
+            margin-top: 8px;
+            transition: background 0.2s;
+        }
+
+        .submit-btn:hover {
+            background: #243860;
+        }
+
+        .submit-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        /* ── Error ── */
+        .error-msg {
+            display: none;
+            background: #fff0f0;
+            border: 1px solid #fecaca;
+            color: var(--red);
+            font-size: 13px;
+            padding: 10px 14px;
+            border-radius: 3px;
+            margin-bottom: 20px;
+        }
+
+        .error-msg.show {
+            display: block;
+        }
+
+        /* ── Divider ── */
+        .divider {
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+            margin: 24px 0 20px;
+            position: relative;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 42%;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .divider::before {
+            left: 0;
+        }
+
+        .divider::after {
+            right: 0;
+        }
+
+        /* ── Register links ── */
+        .register-links {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .register-link {
+            display: block;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 3px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #64748b;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .register-link:hover {
+            border-color: var(--navy);
+            color: var(--navy);
+            background: #f8fafc;
+        }
+
+        .register-link .role-label {
+            display: block;
+            font-size: 10px;
+            font-weight: normal;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        /* ── Success screen ── */
+        .success-screen {
+            display: none;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .success-icon {
+            width: 56px;
+            height: 56px;
+            background: #f0fdf4;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 24px;
+        }
+
+        .success-screen h2 {
+            font-size: 20px;
+            font-weight: 900;
+            color: var(--navy);
+            margin: 0 0 8px;
+        }
+
+        .success-screen p {
+            font-size: 13px;
+            color: #64748b;
+            margin: 0 0 24px;
+        }
+
+        .success-screen .back-btn {
+            display: inline-block;
+            padding: 10px 28px;
+            background: var(--navy);
+            color: white;
+            border-radius: 3px;
+            font-size: 13px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <a href="join-supplier.html">供應商會員</a>
+        <a href="join-buyer.html">需求端會員</a>
+        <span style="color:#4a5568;">|</span>
+        <a href="ai-foundry.html" style="color:#D12329; font-weight:bold;">繁體中文</a>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="main-nav">
+        <div class="main-nav-inner">
+            <a href="ai-foundry.html" class="logo">AI <span>FOUNDRY</span></a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <div class="hero">
+        <div class="tag">MEMBER LOGIN</div>
+        <h1>會員登入</h1>
+        <p>請輸入您的電郵與密碼</p>
+    </div>
+
+    <!-- Card -->
+    <div class="card-wrap">
+        <div class="card">
+
+            <!-- Login form -->
+            <div id="login-form">
+                <div class="card-title">帳號登入</div>
+
+                <div class="error-msg" id="error-msg"></div>
+
+                <div class="field">
+                    <label>電郵地址</label>
+                    <input type="email" id="email" placeholder="your@email.com" autocomplete="email">
+                </div>
+
+                <div class="field">
+                    <label>密碼</label>
+                    <div class="pw-wrap">
+                        <input type="password" id="password" placeholder="輸入密碼" autocomplete="current-password">
+                        <button class="pw-toggle" type="button" onclick="togglePw()">顯示</button>
+                    </div>
+                </div>
+
+                <button class="submit-btn" id="submit-btn" onclick="doLogin()">登入</button>
+
+                <div class="divider">還沒有帳號？</div>
+
+                <div class="register-links">
+                    <a href="join-supplier.html" class="register-link">
+                        加入供應商
+                        <span class="role-label">提供加工服務</span>
+                    </a>
+                    <a href="join-buyer.html" class="register-link">
+                        加入需求端
+                        <span class="role-label">尋找加工廠商</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Success screen -->
+            <div class="success-screen" id="success-screen">
+                <div class="success-icon">✓</div>
+                <h2 id="success-name">歡迎回來</h2>
+                <p id="success-role">登入成功，正在為您跳轉...</p>
+                <a href="ai-foundry.html" class="back-btn">前往主頁</a>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const API = 'https://ai-foundry-backend-production.up.railway.app';
+
+        // 已登入則直接跳轉
+        if (localStorage.getItem('ai_foundry_token')) {
+            window.location.href = 'ai-foundry.html';
+        }
+
+        function togglePw() {
+            const pw = document.getElementById('password');
+            const btn = document.querySelector('.pw-toggle');
+            if (pw.type === 'password') {
+                pw.type = 'text';
+                btn.textContent = '隱藏';
+            } else {
+                pw.type = 'password';
+                btn.textContent = '顯示';
+            }
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('error-msg');
+            el.textContent = msg;
+            el.classList.add('show');
+        }
+
+        function hideError() {
+            document.getElementById('error-msg').classList.remove('show');
+        }
+
+        // Enter 鍵觸發登入
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Enter') doLogin();
+        });
+
+        function doLogin() {
+            hideError();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                showError('請填寫電郵與密碼');
+                return;
+            }
+
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.textContent = '登入中...';
+
+            fetch(`${API}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            })
+                .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    btn.disabled = false;
+                    btn.textContent = '登入';
+
+                    if (!ok) {
+                        showError(data.detail || '登入失敗，請確認電郵與密碼');
+                        return;
+                    }
+
+                    // 儲存 token 和用戶資料
+                    localStorage.setItem('ai_foundry_token', data.access_token);
+                    localStorage.setItem('ai_foundry_user', JSON.stringify(data.user));
+
+                    // 顯示成功畫面
+                    const user = data.user;
+                    const name = user.company_name || user.owner_name || user.email;
+                    const roleText = user.role === 'supplier' ? '供應商會員' : '需求端會員';
+                    document.getElementById('success-name').textContent = `歡迎回來，${name}`;
+                    document.getElementById('success-role').textContent = `身份：${roleText}`;
+                    document.getElementById('login-form').style.display = 'none';
+                    document.getElementById('success-screen').style.display = 'block';
+
+                    // 3 秒後自動跳轉
+                    setTimeout(() => { window.location.href = 'ai-foundry.html'; }, 3000);
+                })
+                .catch(() => {
+                    btn.disabled = false;
+                    btn.textContent = '登入';
+                    showError('連線失敗，請稍後再試');
+                });
+        }
+    </script>
+
+</body>
+
+</html>

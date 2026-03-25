@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鐵皮屋工程估價 — AI Foundry</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
+        :root { --red:#D12329; --navy:#1a2b49; --bg:#f4f6f9; }
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family:'Noto Sans TC',sans-serif; background:var(--bg); margin:0; color:#333; }
+
+        .topbar { background:var(--navy); color:white; padding:6px 24px; font-size:11px; display:flex; justify-content:flex-end; gap:24px; }
+        .topbar a { color:white; text-decoration:none; }
+        .topbar a:hover { color:#ccc; }
+        .main-nav { background:white; border-bottom:1px solid #e5e7eb; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+        .main-nav-inner { max-width:1100px; margin:0 auto; padding:0 24px; height:64px; display:flex; align-items:center; justify-content:space-between; }
+        .logo { font-size:22px; font-weight:900; color:var(--navy); text-decoration:none; letter-spacing:-0.05em; }
+        .logo span { color:var(--red); }
+
+        .hero { background:var(--navy); color:white; padding:40px 24px; text-align:center; }
+        .hero .tag { font-size:10px; font-weight:bold; letter-spacing:0.3em; color:var(--red); margin-bottom:10px; }
+        .hero h1 { font-size:28px; font-weight:900; margin:0 0 8px; }
+        .hero p { color:#94a3b8; font-size:13px; margin:0; }
+
+        .container { max-width:1100px; margin:32px auto; padding:0 24px; }
+
+        .table-wrap { background:white; border-radius:4px; box-shadow:0 1px 6px rgba(0,0,0,0.07); overflow:hidden; margin-bottom:20px; }
+        .table-header { padding:14px 20px; background:#f8fafc; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; }
+        .table-header h2 { margin:0; font-size:14px; font-weight:700; color:var(--navy); }
+
+        table { width:100%; border-collapse:collapse; }
+        thead th { background:#f8fafc; padding:9px 10px; text-align:left; font-size:11px; font-weight:bold; color:#94a3b8; letter-spacing:0.08em; text-transform:uppercase; border-bottom:1px solid #f1f5f9; white-space:nowrap; }
+        tbody tr { border-bottom:1px solid #f8fafc; }
+        tbody td { padding:8px 10px; font-size:13px; vertical-align:middle; }
+
+        select, input[type="number"], input[type="text"] {
+            width:100%; padding:6px 8px; border:1px solid #e2e8f0; border-radius:3px;
+            font-size:12px; font-family:inherit; outline:none; color:#1e293b;
+        }
+        select:focus, input:focus { border-color:var(--navy); }
+        input[type="number"] { text-align:right; }
+
+        .btn-group { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+        .btn { padding:10px 18px; border:none; border-radius:3px; font-size:13px; font-weight:bold; cursor:pointer; font-family:inherit; }
+        .btn-back { background:#f1f5f9; color:#64748b; }
+        .btn-add  { background:#22c55e; color:white; }
+        .btn-del  { background:none; border:none; color:var(--red); cursor:pointer; font-size:16px; padding:0 4px; }
+        .btn-submit { background:var(--red); color:white; padding:10px 24px; border:none; border-radius:3px; font-size:14px; font-weight:bold; cursor:pointer; font-family:inherit; letter-spacing:0.05em; }
+
+        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:1000; align-items:center; justify-content:center; }
+        .modal-overlay.open { display:flex; }
+        .modal { background:white; width:100%; max-width:500px; border-radius:4px; box-shadow:0 20px 60px rgba(0,0,0,0.25); overflow:hidden; }
+        .modal-head { background:var(--navy); color:white; padding:20px 24px; display:flex; justify-content:space-between; align-items:center; }
+        .modal-head h2 { margin:0; font-size:17px; font-weight:700; }
+        .modal-close { background:none; border:none; color:white; font-size:22px; cursor:pointer; padding:0; line-height:1; }
+        .modal-body { padding:24px; display:flex; flex-direction:column; gap:16px; }
+        .modal-field label { display:block; font-size:10px; font-weight:bold; color:#94a3b8; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px; }
+        .modal-field input, .modal-field select, .modal-field textarea {
+            width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:3px;
+            font-size:14px; font-family:inherit; outline:none; box-sizing:border-box;
+        }
+        .modal-field textarea { resize:vertical; }
+        .modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus { border-color:var(--navy); }
+        .modal-footer { padding:16px 24px; border-top:1px solid #f1f5f9; display:grid; grid-template-columns:1fr 2fr; gap:10px; }
+        .btn-cancel { padding:12px; background:white; border:1px solid #ddd; border-radius:3px; font-size:13px; cursor:pointer; color:#666; font-family:inherit; }
+        .btn-confirm { padding:12px; background:var(--red); color:white; border:none; border-radius:3px; font-size:13px; font-weight:bold; cursor:pointer; font-family:inherit; }
+        .btn-confirm:disabled { background:#94a3b8; cursor:not-allowed; }
+
+        .result-screen { display:none; background:white; border-radius:4px; box-shadow:0 1px 6px rgba(0,0,0,0.07); padding:40px; text-align:center; margin-bottom:24px; }
+        .result-icon { width:60px; height:60px; background:#f0fdf4; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:26px; margin:0 auto 16px; }
+        .result-screen h2 { font-size:22px; font-weight:900; color:var(--navy); margin:0 0 8px; }
+        .result-price { font-size:36px; font-weight:900; color:var(--red); margin:16px 0 4px; }
+        .result-area { font-size:14px; color:#64748b; margin-bottom:8px; }
+        .result-id { font-size:12px; color:#94a3b8; margin-bottom:24px; }
+        .result-note { font-size:13px; color:#64748b; background:#f8fafc; padding:12px 16px; border-radius:3px; margin-bottom:24px; text-align:left; }
+        .btn-new { padding:10px 28px; background:var(--navy); color:white; border:none; border-radius:3px; font-size:13px; font-weight:bold; cursor:pointer; font-family:inherit; }
+
+        .error-msg { background:#fff0f0; border:1px solid #fecaca; color:var(--red); font-size:13px; padding:10px 14px; border-radius:3px; display:none; }
+        .error-msg.show { display:block; }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <a href="../join-supplier.html">供應商會員</a>
+    <a href="../join-buyer.html">需求端會員</a>
+    <span style="color:#4a5568;">|</span>
+    <a href="../login.html">會員登入</a>
+</div>
+<nav class="main-nav">
+    <div class="main-nav-inner">
+        <a href="../ai-foundry.html" class="logo">AI <span>FOUNDRY</span></a>
+        <span style="font-size:12px; color:#94a3b8;">鐵皮屋工程估價</span>
+    </div>
+</nav>
+
+<div class="hero">
+    <div class="tag">TIN BUILDING ESTIMATE</div>
+    <h1>鐵皮屋工程估價</h1>
+    <p>填寫工程資料，送出後系統自動計算報價</p>
+</div>
+
+<div class="container">
+
+    <div class="table-wrap" id="main-section">
+        <div class="table-header">
+            <h2>工程清單</h2>
+            <button class="btn btn-add" onclick="addRow()">+ 新增工程</button>
+        </div>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="3%">#</th>
+                        <th width="12%">案件名稱</th>
+                        <th width="8%">長(m)</th>
+                        <th width="8%">寬(m)</th>
+                        <th width="8%">高(m)</th>
+                        <th width="10%">屋型</th>
+                        <th width="13%">板材種類</th>
+                        <th width="6%">鐵捲門</th>
+                        <th width="6%">橫拉門</th>
+                        <th width="6%">採光窗</th>
+                        <th width="6%">通風口</th>
+                        <th width="6%">數量</th>
+                        <th width="4%">刪除</th>
+                    </tr>
+                </thead>
+                <tbody id="row-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn btn-back" onclick="window.location.href='../ai-foundry.html'">← 返回選單</button>
+        <button class="btn-submit" onclick="openModal()">📢 取得報價並發布需求</button>
+    </div>
+
+    <div class="result-screen" id="result-screen">
+        <div class="result-icon">✓</div>
+        <h2>估價完成</h2>
+        <div class="result-price" id="result-price">$0</div>
+        <div class="result-area" id="result-area"></div>
+        <div class="result-id" id="result-id"></div>
+        <div class="result-note">
+            ✅ 您的需求已發布，符合條件的供應商將收到通知並與您聯繫。<br>
+            如有疑問請透過聊天功能與我們聯繫。
+        </div>
+        <button class="btn-new" onclick="startNew()">重新填寫</button>
+    </div>
+
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+        <div class="modal-head">
+            <div>
+                <div style="font-size:10px; letter-spacing:0.2em; color:var(--red); font-weight:bold; margin-bottom:4px;">PUBLISH REQUEST</div>
+                <h2>發布採購需求</h2>
+            </div>
+            <button class="modal-close" onclick="closeModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="error-msg" id="modal-error"></div>
+            <div class="modal-field">
+                <label>期望完成時間</label>
+                <input type="date" id="req-date">
+            </div>
+            <div class="modal-field">
+                <label>發布範圍</label>
+                <select id="req-region">
+                    <option value="all">全台供應商</option>
+                    <option value="north">北部（北北基桃竹宜）</option>
+                    <option value="central">中部（苗中彰投雲）</option>
+                    <option value="south">南部（嘉南高屏）</option>
+                    <option value="east">東部（花東）</option>
+                </select>
+            </div>
+            <div class="modal-field">
+                <label>預算上限 (NT$)</label>
+                <input type="number" id="req-budget" placeholder="選填，例：500000">
+            </div>
+            <div class="modal-field">
+                <label>聯絡方式（必填）</label>
+                <input type="text" id="req-contact" placeholder="電話 或 Email">
+            </div>
+            <div class="modal-field">
+                <label>特殊備註</label>
+                <textarea id="req-note" rows="3" placeholder="例：指定工法、材料規格需求..."></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn-confirm" id="btn-confirm" onclick="submitEstimate()">確認發布並取得報價</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const API = 'https://ai-foundry-backend-production.up.railway.app';
+let rowCount = 0;
+
+const MAT_OPTS = [
+    { val:'gz_04', label:'鍍鋅板 0.4mm' },
+    { val:'gz_06', label:'鍍鋅板 0.6mm' },
+    { val:'cs_04', label:'彩鋼板 0.4mm' },
+    { val:'cs_06', label:'彩鋼板 0.6mm' },
+    { val:'ins',   label:'隔熱夾心板' },
+];
+
+function addRow() {
+    rowCount++;
+    const id = rowCount;
+    const matOpts = MAT_OPTS.map(m => `<option value="${m.val}">${m.label}</option>`).join('');
+    const tr = document.createElement('tr');
+    tr.id = `row-${id}`;
+    tr.innerHTML = `
+        <td style="color:#94a3b8;">${id}</td>
+        <td><input type="text" placeholder="案件名稱"></td>
+        <td><input type="number" class="r-len" placeholder="長" min="0" step="0.1"></td>
+        <td><input type="number" class="r-wid" placeholder="寬" min="0" step="0.1"></td>
+        <td><input type="number" class="r-hgt" placeholder="高" min="0" step="0.1"></td>
+        <td><select class="r-roof">
+            <option value="flat">平頂</option>
+            <option value="single">單斜</option>
+            <option value="double" selected>雙斜</option>
+        </select></td>
+        <td><select class="r-mat">${matOpts}</select></td>
+        <td><input type="number" class="r-door-roll"  value="0" min="0"></td>
+        <td><input type="number" class="r-door-slide" value="0" min="0"></td>
+        <td><input type="number" class="r-window"     value="0" min="0"></td>
+        <td><input type="number" class="r-vent"       value="0" min="0"></td>
+        <td><input type="number" class="r-qty"        value="1" min="1"></td>
+        <td><button class="btn-del" onclick="document.getElementById('row-${id}').remove()">×</button></td>
+    `;
+    document.getElementById('row-tbody').appendChild(tr);
+}
+
+function collectRows() {
+    const rows = document.querySelectorAll('#row-tbody tr');
+    return [...rows].map(row => ({
+        name:       row.querySelector('input[type=text]')?.value || '',
+        length:     parseFloat(row.querySelector('.r-len')?.value) || 0,
+        width:      parseFloat(row.querySelector('.r-wid')?.value) || 0,
+        height:     parseFloat(row.querySelector('.r-hgt')?.value) || 0,
+        roof_type:  row.querySelector('.r-roof')?.value || 'double',
+        material:   row.querySelector('.r-mat')?.value || 'gz_04',
+        door_roll:  parseInt(row.querySelector('.r-door-roll')?.value) || 0,
+        door_slide: parseInt(row.querySelector('.r-door-slide')?.value) || 0,
+        window:     parseInt(row.querySelector('.r-window')?.value) || 0,
+        vent:       parseInt(row.querySelector('.r-vent')?.value) || 0,
+        qty:        parseInt(row.querySelector('.r-qty')?.value) || 1,
+    }));
+}
+
+function openModal() {
+    const rows = collectRows();
+    if (!rows.length) { alert('請至少新增一筆工程'); return; }
+    for (const r of rows) {
+        if (!r.length || !r.width) { alert('請填寫所有工程的長度與寬度'); return; }
+    }
+    document.getElementById('modal-error').classList.remove('show');
+    document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+function showError(msg) {
+    const el = document.getElementById('modal-error');
+    el.textContent = msg; el.classList.add('show');
+}
+
+async function submitEstimate() {
+    const contact  = document.getElementById('req-contact').value.trim();
+    const deadline = document.getElementById('req-date').value;
+    if (!contact)  { showError('請填寫聯絡方式'); return; }
+    if (!deadline) { showError('請選擇期望完成時間'); return; }
+
+    const payload = {
+        items:    collectRows(),
+        contact,
+        deadline,
+        region:   document.getElementById('req-region').value,
+        budget:   parseFloat(document.getElementById('req-budget').value) || null,
+        note:     document.getElementById('req-note').value,
+    };
+
+    const btn = document.getElementById('btn-confirm');
+    btn.disabled = true; btn.textContent = '計算中...';
+
+    try {
+        const res = await fetch(`${API}/api/estimate/tin`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) { showError(data.detail || '發生錯誤，請稍後再試'); return; }
+
+        closeModal();
+        document.getElementById('main-section').style.display = 'none';
+        document.querySelector('.btn-group').style.display = 'none';
+
+        document.getElementById('result-price').textContent = '$' + data.grand_total.toLocaleString();
+        document.getElementById('result-area').textContent  = `總建築面積：${data.grand_area.toFixed(1)} m²`;
+        document.getElementById('result-id').textContent    = `需求編號：#${data.request_id}`;
+        document.getElementById('result-screen').style.display = 'block';
+
+    } catch(e) {
+        showError('連線失敗，請確認網路後再試');
+    } finally {
+        btn.disabled = false; btn.textContent = '確認發布並取得報價';
+    }
+}
+
+function startNew() {
+    document.getElementById('row-tbody').innerHTML = '';
+    rowCount = 0;
+    document.getElementById('main-section').style.display = '';
+    document.querySelector('.btn-group').style.display = '';
+    document.getElementById('result-screen').style.display = 'none';
+    addRow();
+}
+
+addRow();
+</script>
+</body>
+</html>

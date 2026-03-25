@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CNC 加工估價 — AI Foundry</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
+        :root { --red:#D12329; --navy:#1a2b49; --bg:#f4f6f9; }
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family:'Noto Sans TC',sans-serif; background:var(--bg); margin:0; color:#333; }
+
+        .topbar { background:var(--navy); color:white; padding:6px 24px; font-size:11px; display:flex; justify-content:flex-end; gap:24px; }
+        .topbar a { color:white; text-decoration:none; }
+        .topbar a:hover { color:#ccc; }
+        .main-nav { background:white; border-bottom:1px solid #e5e7eb; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+        .main-nav-inner { max-width:1100px; margin:0 auto; padding:0 24px; height:64px; display:flex; align-items:center; justify-content:space-between; }
+        .logo { font-size:22px; font-weight:900; color:var(--navy); text-decoration:none; letter-spacing:-0.05em; }
+        .logo span { color:var(--red); }
+
+        .hero { background:var(--navy); color:white; padding:40px 24px; text-align:center; }
+        .hero .tag { font-size:10px; font-weight:bold; letter-spacing:0.3em; color:var(--red); margin-bottom:10px; }
+        .hero h1 { font-size:28px; font-weight:900; margin:0 0 8px; }
+        .hero p { color:#94a3b8; font-size:13px; margin:0; }
+
+        .container { max-width:1100px; margin:32px auto; padding:0 24px; }
+
+        /* Table */
+        .table-wrap { background:white; border-radius:4px; box-shadow:0 1px 6px rgba(0,0,0,0.07); overflow:hidden; margin-bottom:20px; }
+        .table-header { padding:14px 20px; background:#f8fafc; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; }
+        .table-header h2 { margin:0; font-size:14px; font-weight:700; color:var(--navy); }
+        table { width:100%; border-collapse:collapse; }
+        thead th { background:#f8fafc; padding:9px 10px; text-align:left; font-size:11px; font-weight:bold; color:#94a3b8; letter-spacing:0.08em; text-transform:uppercase; border-bottom:1px solid #f1f5f9; white-space:nowrap; }
+        tbody tr { border-bottom:1px solid #f8fafc; }
+        tbody td { padding:8px 10px; font-size:13px; vertical-align:middle; }
+
+        select, input[type="number"], input[type="text"] {
+            width:100%; padding:6px 8px; border:1px solid #e2e8f0; border-radius:3px;
+            font-size:12px; font-family:inherit; outline:none; color:#1e293b;
+        }
+        select:focus, input:focus { border-color:var(--navy); }
+        input[type="number"] { text-align:right; }
+
+        .checkbox-group { display:flex; flex-direction:column; gap:4px; font-size:11px; }
+        .checkbox-group label { display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap; }
+
+        /* Buttons */
+        .btn-group { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+        .btn { padding:10px 18px; border:none; border-radius:3px; font-size:13px; font-weight:bold; cursor:pointer; font-family:inherit; }
+        .btn-back { background:#f1f5f9; color:#64748b; }
+        .btn-add  { background:#22c55e; color:white; }
+        .btn-del  { background:none; border:none; color:var(--red); cursor:pointer; font-size:16px; padding:0 4px; }
+        .btn-submit { background:var(--red); color:white; padding:10px 24px; border:none; border-radius:3px; font-size:14px; font-weight:bold; cursor:pointer; font-family:inherit; letter-spacing:0.05em; }
+
+        /* Summary */
+        .summary { text-align:right; font-size:14px; color:#64748b; margin-bottom:24px; }
+        .summary strong { font-size:20px; color:var(--navy); }
+
+        /* Modal */
+        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:1000; align-items:center; justify-content:center; }
+        .modal-overlay.open { display:flex; }
+        .modal { background:white; width:100%; max-width:500px; border-radius:4px; box-shadow:0 20px 60px rgba(0,0,0,0.25); overflow:hidden; }
+        .modal-head { background:var(--navy); color:white; padding:20px 24px; display:flex; justify-content:space-between; align-items:center; }
+        .modal-head h2 { margin:0; font-size:17px; font-weight:700; }
+        .modal-close { background:none; border:none; color:white; font-size:22px; cursor:pointer; padding:0; line-height:1; }
+        .modal-body { padding:24px; display:flex; flex-direction:column; gap:16px; }
+        .modal-field label { display:block; font-size:10px; font-weight:bold; color:#94a3b8; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px; }
+        .modal-field input, .modal-field select, .modal-field textarea {
+            width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:3px;
+            font-size:14px; font-family:inherit; outline:none; box-sizing:border-box;
+        }
+        .modal-field textarea { resize:vertical; }
+        .modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus { border-color:var(--navy); }
+        .modal-footer { padding:16px 24px; border-top:1px solid #f1f5f9; display:grid; grid-template-columns:1fr 2fr; gap:10px; }
+        .btn-cancel { padding:12px; background:white; border:1px solid #ddd; border-radius:3px; font-size:13px; cursor:pointer; color:#666; font-family:inherit; }
+        .btn-confirm { padding:12px; background:var(--red); color:white; border:none; border-radius:3px; font-size:13px; font-weight:bold; cursor:pointer; font-family:inherit; }
+        .btn-confirm:disabled { background:#94a3b8; cursor:not-allowed; }
+
+        /* Result screen */
+        .result-screen { display:none; background:white; border-radius:4px; box-shadow:0 1px 6px rgba(0,0,0,0.07); padding:40px; text-align:center; margin-bottom:24px; }
+        .result-icon { width:60px; height:60px; background:#f0fdf4; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:26px; margin:0 auto 16px; }
+        .result-screen h2 { font-size:22px; font-weight:900; color:var(--navy); margin:0 0 8px; }
+        .result-price { font-size:36px; font-weight:900; color:var(--red); margin:16px 0 8px; }
+        .result-id { font-size:12px; color:#94a3b8; margin-bottom:24px; }
+        .result-note { font-size:13px; color:#64748b; background:#f8fafc; padding:12px 16px; border-radius:3px; margin-bottom:24px; text-align:left; }
+        .btn-new { padding:10px 28px; background:var(--navy); color:white; border:none; border-radius:3px; font-size:13px; font-weight:bold; cursor:pointer; font-family:inherit; }
+
+        .error-msg { background:#fff0f0; border:1px solid #fecaca; color:var(--red); font-size:13px; padding:10px 14px; border-radius:3px; display:none; }
+        .error-msg.show { display:block; }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <a href="../join-supplier.html">供應商會員</a>
+    <a href="../join-buyer.html">需求端會員</a>
+    <span style="color:#4a5568;">|</span>
+    <a href="../login.html">會員登入</a>
+</div>
+<nav class="main-nav">
+    <div class="main-nav-inner">
+        <a href="../ai-foundry.html" class="logo">AI <span>FOUNDRY</span></a>
+        <span style="font-size:12px; color:#94a3b8;">CNC 加工估價</span>
+    </div>
+</nav>
+
+<div class="hero">
+    <div class="tag">CNC MACHINING ESTIMATE</div>
+    <h1>CNC 加工估價</h1>
+    <p>填寫工件資料，送出後系統自動計算報價</p>
+</div>
+
+<div class="container">
+
+    <!-- 工件表格 -->
+    <div class="table-wrap" id="main-section">
+        <div class="table-header">
+            <h2>工件清單</h2>
+            <button class="btn btn-add" onclick="addItem()">+ 新增工件</button>
+        </div>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="3%">#</th>
+                        <th width="7%">形狀</th>
+                        <th width="10%">件號</th>
+                        <th width="13%">材料</th>
+                        <th width="14%">加工方式</th>
+                        <th width="14%">表面處理</th>
+                        <th width="7%">厚H(mm)</th>
+                        <th width="7%">寬W(mm)</th>
+                        <th width="7%">長L(mm)</th>
+                        <th width="5%">刪除</th>
+                    </tr>
+                </thead>
+                <tbody id="item-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn btn-back" onclick="window.location.href='../ai-foundry.html'">← 返回選單</button>
+        <button class="btn-submit" onclick="openModal()">📢 取得報價並發布需求</button>
+    </div>
+
+    <!-- Result -->
+    <div class="result-screen" id="result-screen">
+        <div class="result-icon">✓</div>
+        <h2>估價完成</h2>
+        <div class="result-price" id="result-price">$0</div>
+        <div class="result-id" id="result-id"></div>
+        <div class="result-note">
+            ✅ 您的需求已發布，符合條件的供應商將收到通知並與您聯繫。<br>
+            如有疑問請透過聊天功能與我們聯繫。
+        </div>
+        <button class="btn-new" onclick="startNew()">重新填寫</button>
+    </div>
+
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+        <div class="modal-head">
+            <div>
+                <div style="font-size:10px; letter-spacing:0.2em; color:var(--red); font-weight:bold; margin-bottom:4px;">PUBLISH REQUEST</div>
+                <h2>發布採購需求</h2>
+            </div>
+            <button class="modal-close" onclick="closeModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="error-msg" id="modal-error"></div>
+            <div class="modal-field">
+                <label>期望完成時間</label>
+                <input type="date" id="req-date">
+            </div>
+            <div class="modal-field">
+                <label>發布範圍</label>
+                <select id="req-region">
+                    <option value="all">全台供應商</option>
+                    <option value="north">北部（北北基桃竹宜）</option>
+                    <option value="central">中部（苗中彰投雲）</option>
+                    <option value="south">南部（嘉南高屏）</option>
+                    <option value="east">東部（花東）</option>
+                </select>
+            </div>
+            <div class="modal-field">
+                <label>預算上限 (NT$)</label>
+                <input type="number" id="req-budget" placeholder="選填，例：50000">
+            </div>
+            <div class="modal-field">
+                <label>聯絡方式（必填）</label>
+                <input type="text" id="req-contact" placeholder="電話 或 Email">
+            </div>
+            <div class="modal-field">
+                <label>特殊備註</label>
+                <textarea id="req-note" rows="3" placeholder="例：需陽極處理、指定材料廠牌..."></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn-confirm" id="btn-confirm" onclick="submitEstimate()">確認發布並取得報價</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const API = 'https://ai-foundry-backend-production.up.railway.app';
+let itemCount = 0;
+
+const MAT_OPTIONS = [
+    { val:'al_5083',        label:'鋁合金 5083',      type:'al' },
+    { val:'al_6061_cn',     label:'鋁合金 6061（中鋁）', type:'al' },
+    { val:'al_6061_kr',     label:'鋁合金 6061（韓板）', type:'al' },
+    { val:'al_6061_round',  label:'鋁合金 6061（圓棒）', type:'al', roundOnly:true },
+    { val:'al_jp',          label:'鋁合金 A69（日本）', type:'al' },
+    { val:'fe_s45c',        label:'碳鋼 S45C',         type:'fe' },
+    { val:'fe_skd11',       label:'模具鋼 SKD11',      type:'fe' },
+    { val:'fe_sus303',      label:'不鏽鋼 SUS303',     type:'sus' },
+    { val:'fe_sus304',      label:'不鏽鋼 SUS304',     type:'sus' },
+    { val:'fe_chrome',      label:'鍍鉻棒',             type:'fe', roundOnly:true },
+    { val:'cu',             label:'黃銅',               type:'other' },
+    { val:'plastic',        label:'塑膠',               type:'other' },
+    { val:'bakelite',       label:'電木',               type:'other' },
+];
+
+const MACH_AL = [
+    { val:'none',     label:'無加工' },
+    { val:'thk_no',   label:'銑面（厚度不銑）' },
+    { val:'mill_6',   label:'銑六面' },
+    { val:'clamp_f4', label:'壓板銑4面' },
+    { val:'clamp_f6', label:'壓板銑6面' },
+];
+const MACH_FE = [
+    { val:'none',   label:'無加工' },
+    { val:'f2',     label:'銑2面' },
+    { val:'f2g2',   label:'銑2面研2面' },
+    { val:'f4',     label:'銑4面' },
+    { val:'f4g4',   label:'銑4面研4面' },
+    { val:'a_f6',   label:'銑6面' },
+    { val:'b_f6g2', label:'銑6面研2面' },
+    { val:'c_f6g4', label:'銑6面研4面' },
+    { val:'d_f6g6', label:'銑6面研6面' },
+];
+const MACH_SUS304 = [
+    { val:'none',   label:'無加工' },
+    { val:'mill_6', label:'銑六面' },
+];
+
+function getMachOptions(matVal) {
+    if (matVal === 'fe_sus304') return MACH_SUS304;
+    const mat = MAT_OPTIONS.find(m => m.val === matVal);
+    if (!mat) return MACH_AL;
+    return mat.type === 'al' || matVal === 'bakelite' ? MACH_AL : MACH_FE;
+}
+
+function getSurfaceOptions(matVal) {
+    const mat = MAT_OPTIONS.find(m => m.val === matVal);
+    if (!mat) return [];
+    if (mat.type === 'al') return [
+        { val:'natural', label:'陽極本色' },
+        { val:'matte',   label:'陽極霧本' },
+        { val:'black',   label:'陽極黑色' },
+        { val:'hard',    label:'硬化陽極' },
+    ];
+    if (mat.type === 'fe' || mat.type === 'sus') return [
+        { val:'chrome', label:'鍍鉻' },
+        { val:'heat',   label:'熱處理' },
+        { val:'nickel', label:'化鎳' },
+    ];
+    return [];
+}
+
+function buildMatOptions(shape) {
+    return MAT_OPTIONS
+        .filter(m => shape === 'round' ? (m.roundOnly || !m.val.includes('round')) : !m.roundOnly)
+        .map(m => `<option value="${m.val}">${m.label}</option>`)
+        .join('');
+}
+
+function addItem() {
+    itemCount++;
+    const tbody = document.getElementById('item-tbody');
+    const tr = document.createElement('tr');
+    tr.id = `row-${itemCount}`;
+    tr.innerHTML = `
+        <td style="color:#94a3b8;">${itemCount}</td>
+        <td><select onchange="onShapeChange(this,${itemCount})">
+            <option value="block">板材</option>
+            <option value="round">圓棒</option>
+        </select></td>
+        <td><input type="text" placeholder="件號"></td>
+        <td><select id="mat-${itemCount}" onchange="onMatChange(this,${itemCount})">${buildMatOptions('block')}</select></td>
+        <td id="mach-cell-${itemCount}"></td>
+        <td id="surf-cell-${itemCount}"></td>
+        <td><input type="number" id="h-${itemCount}" placeholder="厚" min="0"></td>
+        <td><input type="number" id="w-${itemCount}" placeholder="寬" min="0"></td>
+        <td><input type="number" id="l-${itemCount}" placeholder="長" min="0"></td>
+        <td><button class="btn-del" onclick="delItem(${itemCount})">×</button></td>
+    `;
+    tbody.appendChild(tr);
+    refreshMach(itemCount);
+    refreshSurf(itemCount);
+}
+
+function onShapeChange(sel, id) {
+    const shape = sel.value;
+    const matSel = document.getElementById(`mat-${id}`);
+    const curVal = matSel.value;
+    matSel.innerHTML = buildMatOptions(shape);
+    if ([...matSel.options].some(o => o.value === curVal)) matSel.value = curVal;
+    const hInput = document.getElementById(`h-${id}`);
+    if (shape === 'round') {
+        hInput.value = ''; hInput.disabled = true; hInput.placeholder = '-';
+        document.getElementById(`w-${id}`).placeholder = '直徑';
+    } else {
+        hInput.disabled = false; hInput.placeholder = '厚';
+        document.getElementById(`w-${id}`).placeholder = '寬';
+    }
+    refreshMach(id);
+    refreshSurf(id);
+}
+
+function onMatChange(sel, id) {
+    refreshMach(id);
+    refreshSurf(id);
+}
+
+function refreshMach(id) {
+    const matVal = document.getElementById(`mat-${id}`).value;
+    const opts = getMachOptions(matVal);
+    const cell = document.getElementById(`mach-cell-${id}`);
+    cell.innerHTML = `<select>${opts.map(o=>`<option value="${o.val}">${o.label}</option>`).join('')}</select>`;
+}
+
+function refreshSurf(id) {
+    const matVal = document.getElementById(`mat-${id}`).value;
+    const opts = getSurfaceOptions(matVal);
+    const cell = document.getElementById(`surf-cell-${id}`);
+    if (!opts.length) { cell.innerHTML = '<span style="color:#94a3b8;font-size:12px;">—</span>'; return; }
+    const isAl = MAT_OPTIONS.find(m=>m.val===matVal)?.type === 'al';
+    cell.innerHTML = `<div class="checkbox-group">${opts.map(o =>
+        `<label><input type="checkbox" value="${o.val}" ${isAl ? 'onclick="toggleExcl(this)"' : ''}> ${o.label}</label>`
+    ).join('')}</div>`;
+}
+
+function toggleExcl(el) {
+    if (!el.checked) return;
+    el.closest('.checkbox-group').querySelectorAll('input[type=checkbox]').forEach(cb => {
+        if (cb !== el) cb.checked = false;
+    });
+}
+
+function delItem(id) {
+    document.getElementById(`row-${id}`)?.remove();
+}
+
+function collectItems() {
+    const rows = document.querySelectorAll('#item-tbody tr');
+    const items = [];
+    for (const row of rows) {
+        const id = row.id.replace('row-', '');
+        const shape   = row.querySelector('select').value;
+        const partNo  = row.querySelectorAll('input[type=text]')[0]?.value || '';
+        const matVal  = document.getElementById(`mat-${id}`)?.value;
+        const machVal = document.getElementById(`mach-cell-${id}`)?.querySelector('select')?.value || 'none';
+        const surfChecked = [...(document.getElementById(`surf-cell-${id}`)?.querySelectorAll('input:checked') || [])].map(c=>c.value);
+        const h = parseFloat(document.getElementById(`h-${id}`)?.value) || 0;
+        const w = parseFloat(document.getElementById(`w-${id}`)?.value) || 0;
+        const l = parseFloat(document.getElementById(`l-${id}`)?.value) || 0;
+        if (!matVal) continue;
+        items.push({ part_no:partNo, shape, material:matVal, machining:machVal, surface:surfChecked, h, w, l });
+    }
+    return items;
+}
+
+function openModal() {
+    const items = collectItems();
+    if (!items.length) { alert('請至少新增一個工件'); return; }
+    for (const item of items) {
+        if ((item.shape==='block' && (!item.h||!item.w||!item.l)) ||
+            (item.shape==='round' && (!item.w||!item.l))) {
+            alert('請填寫所有工件的尺寸'); return;
+        }
+    }
+    document.getElementById('modal-error').classList.remove('show');
+    document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+}
+
+function showError(msg) {
+    const el = document.getElementById('modal-error');
+    el.textContent = msg; el.classList.add('show');
+}
+
+async function submitEstimate() {
+    const contact  = document.getElementById('req-contact').value.trim();
+    const deadline = document.getElementById('req-date').value;
+    if (!contact)  { showError('請填寫聯絡方式'); return; }
+    if (!deadline) { showError('請選擇期望完成時間'); return; }
+
+    const items = collectItems();
+    const payload = {
+        items,
+        contact,
+        deadline,
+        region: document.getElementById('req-region').value,
+        budget: parseFloat(document.getElementById('req-budget').value) || null,
+        note:   document.getElementById('req-note').value,
+    };
+
+    const btn = document.getElementById('btn-confirm');
+    btn.disabled = true; btn.textContent = '計算中...';
+
+    try {
+        const res = await fetch(`${API}/api/estimate/cnc`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) { showError(data.detail || '發生錯誤，請稍後再試'); return; }
+
+        closeModal();
+        document.getElementById('main-section').style.display = 'none';
+        document.querySelector('.btn-group').style.display = 'none';
+
+        document.getElementById('result-price').textContent = '$' + data.grand_total.toLocaleString();
+        document.getElementById('result-id').textContent = `需求編號：#${data.request_id}`;
+        document.getElementById('result-screen').style.display = 'block';
+
+    } catch(e) {
+        showError('連線失敗，請確認網路後再試');
+    } finally {
+        btn.disabled = false; btn.textContent = '確認發布並取得報價';
+    }
+}
+
+function startNew() {
+    document.getElementById('item-tbody').innerHTML = '';
+    itemCount = 0;
+    document.getElementById('main-section').style.display = '';
+    document.querySelector('.btn-group').style.display = '';
+    document.getElementById('result-screen').style.display = 'none';
+    addItem();
+}
+
+// 初始化
+addItem();
+</script>
+</body>
+</html>

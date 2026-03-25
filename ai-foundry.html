@@ -136,6 +136,17 @@
                         class="block px-4 py-2 hover:bg-gray-50 hover:text-[#D12329] transition border-t border-gray-50">需求端會員</a>
                 </div>
             </div>
+            <!-- 登入狀態 -->
+            <div id="nav-login-area">
+                <a href="login.html" class="hover:text-gray-300 transition font-bold tracking-wider">會員登入</a>
+            </div>
+            <div id="nav-user-area" style="display:none;" class="relative group cursor-pointer">
+                <span class="hover:text-gray-300 transition flex items-center gap-1" id="nav-username"></span>
+                <div class="hidden group-hover:block absolute right-0 mt-1 w-36 bg-white text-slate-800 shadow-xl border border-gray-100 z-[60]">
+                    <div class="px-4 py-2 text-[10px] text-gray-400 border-b border-gray-100" id="nav-role"></div>
+                    <a href="#" onclick="doLogout()" class="block px-4 py-2 hover:bg-gray-50 hover:text-[#D12329] transition">登出</a>
+                </div>
+            </div>
             <a href="#" class="hover:text-gray-300 transition">投資人關係</a>
             <span class="text-gray-500">|</span>
             <a href="#" class="text-[#D12329] font-bold">繁體中文</a>
@@ -1105,6 +1116,26 @@
 
             updateBadge();
         })();
+    </script>
+
+    <script>
+        // ── 登入狀態顯示 ──
+        (function checkLoginState() {
+            const user = JSON.parse(localStorage.getItem('ai_foundry_user') || 'null');
+            if (!user) return;
+            const name = user.company_name || user.owner_name || user.email;
+            const roleText = user.role === 'supplier' ? '供應商會員' : '需求端會員';
+            document.getElementById('nav-login-area').style.display = 'none';
+            document.getElementById('nav-user-area').style.display = '';
+            document.getElementById('nav-username').textContent = '👤 ' + name;
+            document.getElementById('nav-role').textContent = roleText;
+        })();
+
+        function doLogout() {
+            localStorage.removeItem('ai_foundry_token');
+            localStorage.removeItem('ai_foundry_user');
+            window.location.reload();
+        }
     </script>
 
 </body>
