@@ -142,9 +142,11 @@
             </div>
             <div id="nav-user-area" style="display:none;" class="relative group cursor-pointer">
                 <span class="hover:text-gray-300 transition flex items-center gap-1" id="nav-username"></span>
-                <div class="hidden group-hover:block absolute right-0 mt-1 w-36 bg-white text-slate-800 shadow-xl border border-gray-100 z-[60]">
+                <div
+                    class="hidden group-hover:block absolute right-0 mt-1 w-36 bg-white text-slate-800 shadow-xl border border-gray-100 z-[60]">
                     <div class="px-4 py-2 text-[10px] text-gray-400 border-b border-gray-100" id="nav-role"></div>
-                    <a href="#" onclick="doLogout()" class="block px-4 py-2 hover:bg-gray-50 hover:text-[#D12329] transition">登出</a>
+                    <a href="#" onclick="doLogout()"
+                        class="block px-4 py-2 hover:bg-gray-50 hover:text-[#D12329] transition">登出</a>
                 </div>
             </div>
             <a href="#" class="hover:text-gray-300 transition">投資人關係</a>
@@ -224,7 +226,7 @@
 
                 <!-- CNC -->
                 <div class="est-card group bg-white border-2 border-gray-100 p-8 rounded-sm cursor-pointer"
-                    onclick="window.location.href='ai-foundry/estimate-cnc.html'">
+                    onclick="goToEstimate('ai-foundry/estimate-cnc-buyer.html')">
                     <div
                         class="text-5xl font-black text-gray-100 group-hover:text-[#D12329]/20 mb-5 transition-colors duration-300 uppercase tracking-tighter">
                         01</div>
@@ -251,7 +253,7 @@
 
                 <!-- 鐵皮屋 -->
                 <div class="est-card group bg-white border-2 border-gray-100 p-8 rounded-sm cursor-pointer"
-                    onclick="window.location.href='ai-foundry/estimate-tin.html'">
+                    onclick="goToEstimate('ai-foundry/estimate-tin-buyer.html')">
                     <div
                         class="text-5xl font-black text-gray-100 group-hover:text-[#D12329]/20 mb-5 transition-colors duration-300 uppercase tracking-tighter">
                         02</div>
@@ -277,7 +279,7 @@
 
                 <!-- 客製化鐵製 -->
                 <div class="est-card group bg-white border-2 border-gray-100 p-8 rounded-sm cursor-pointer"
-                    onclick="window.location.href='ai-foundry/estimate-custom.html'">
+                    onclick="goToEstimate('ai-foundry/estimate-custom.html')">
                     <div
                         class="text-5xl font-black text-gray-100 group-hover:text-[#D12329]/20 mb-5 transition-colors duration-300 uppercase tracking-tighter">
                         03</div>
@@ -1136,6 +1138,55 @@
             localStorage.removeItem('ai_foundry_user');
             window.location.reload();
         }
+    </script>
+
+    <!-- ── 未登入提示 Modal ── -->
+    <div id="login-prompt-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:2000; align-items:center; justify-content:center;">
+        <div style="background:white; width:100%; max-width:420px; border-radius:4px; box-shadow:0 20px 60px rgba(0,0,0,0.25); overflow:hidden;">
+            <div style="background:#1a2b49; color:white; padding:20px 24px;">
+                <div style="font-size:10px; letter-spacing:0.2em; color:#D12329; font-weight:bold; margin-bottom:4px;">MEMBER ONLY</div>
+                <h2 style="margin:0; font-size:18px; font-weight:700;">請先登入或註冊</h2>
+            </div>
+            <div style="padding:24px;">
+                <p style="font-size:14px; color:#64748b; margin:0 0 8px; line-height:1.6;">
+                    估價系統僅限會員使用。<br>
+                    立即免費註冊需求端帳號，享有 <strong style="color:#1a2b49;">3 次免費估價</strong>。
+                </p>
+                <p style="font-size:12px; color:#94a3b8; margin:0 0 20px;">估價結果將同步發布給符合條件的供應商。</p>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+                    <a href="login.html" style="display:block; padding:12px; background:#1a2b49; color:white; border-radius:3px; font-size:13px; font-weight:bold; text-decoration:none; text-align:center;">會員登入</a>
+                    <a href="join-buyer.html" style="display:block; padding:12px; background:#D12329; color:white; border-radius:3px; font-size:13px; font-weight:bold; text-decoration:none; text-align:center;">免費註冊</a>
+                </div>
+                <button onclick="document.getElementById('login-prompt-modal').style.display='none'" style="width:100%; padding:10px; background:white; border:1px solid #e2e8f0; border-radius:3px; font-size:13px; color:#94a3b8; cursor:pointer; font-family:inherit;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function goToEstimate(url) {
+            const user = JSON.parse(localStorage.getItem('ai_foundry_user') || 'null');
+            const token = localStorage.getItem('ai_foundry_token');
+
+            // 未登入 → 跳提示
+            if (!token || !user) {
+                document.getElementById('login-prompt-modal').style.display = 'flex';
+                return;
+            }
+
+            // 供應商 → 不能用估價系統
+            if (user.role === 'supplier') {
+                alert('估價系統僅限需求端會員使用。\n供應商請前往「採購需求列表」查看需求。');
+                return;
+            }
+
+            // 需求端 → 進入估價頁
+            window.location.href = url;
+        }
+
+        // 點遮罩關閉 modal
+        document.getElementById('login-prompt-modal').addEventListener('click', function(e) {
+            if (e.target === this) this.style.display = 'none';
+        });
     </script>
 
 </body>

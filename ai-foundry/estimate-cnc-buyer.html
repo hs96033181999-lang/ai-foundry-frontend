@@ -18,6 +18,28 @@
         .logo { font-size:22px; font-weight:900; color:var(--navy); text-decoration:none; letter-spacing:-0.05em; }
         .logo span { color:var(--red); }
 
+        /* ── Auth wall ── */
+        .auth-wall { max-width:440px; margin:80px auto; background:white; border-radius:4px; box-shadow:0 2px 12px rgba(0,0,0,0.08); padding:40px; text-align:center; }
+        .auth-wall h2 { font-size:20px; font-weight:900; color:var(--navy); margin:0 0 8px; }
+        .auth-wall p { font-size:13px; color:#64748b; margin:0 0 24px; line-height:1.6; }
+        .auth-wall a { display:inline-block; padding:10px 28px; background:var(--navy); color:white; border-radius:3px; font-size:13px; font-weight:bold; text-decoration:none; margin:4px; }
+        .auth-wall a.secondary { background:#f1f5f9; color:#64748b; }
+
+        /* ── Quota badge ── */
+        .quota-bar { background:white; border-radius:4px; box-shadow:0 1px 4px rgba(0,0,0,0.07); padding:12px 20px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; }
+        .quota-info { font-size:13px; color:#64748b; }
+        .quota-info strong { color:var(--navy); }
+        .quota-dots { display:flex; gap:6px; }
+        .quota-dot { width:12px; height:12px; border-radius:50%; background:#e2e8f0; }
+        .quota-dot.used { background:#D12329; }
+        .quota-dot.free { background:#22c55e; }
+
+        /* ── Quota exceeded ── */
+        .quota-exceeded { background:#fff0f0; border:1px solid #fecaca; border-radius:4px; padding:24px; text-align:center; margin-bottom:20px; display:none; }
+        .quota-exceeded h3 { color:var(--red); font-size:16px; margin:0 0 8px; }
+        .quota-exceeded p { font-size:13px; color:#64748b; margin:0 0 16px; }
+        .quota-exceeded a { display:inline-block; padding:10px 24px; background:var(--red); color:white; border-radius:3px; font-size:13px; font-weight:bold; text-decoration:none; }
+
         .hero { background:var(--navy); color:white; padding:40px 24px; text-align:center; }
         .hero .tag { font-size:10px; font-weight:bold; letter-spacing:0.3em; color:var(--red); margin-bottom:10px; }
         .hero h1 { font-size:28px; font-weight:900; margin:0 0 8px; }
@@ -110,7 +132,30 @@
     <p>填寫工件資料，送出後系統自動計算報價</p>
 </div>
 
-<div class="container">
+<!-- Auth wall -->
+<div id="auth-wall" style="display:none;">
+    <div class="auth-wall">
+        <h2>請先登入</h2>
+        <p>估價系統需要登入需求端帳號才能使用。<br>還沒有帳號？立即免費註冊，享有 3 次免費估價。</p>
+        <a href="../login.html">登入</a>
+        <a href="../join-buyer.html" class="secondary">免費註冊</a>
+    </div>
+</div>
+
+<div class="container" id="main-container" style="display:none;">
+
+    <!-- Quota bar -->
+    <div class="quota-bar" id="quota-bar">
+        <div class="quota-info">免費估價次數：<strong id="quota-text">載入中...</strong></div>
+        <div class="quota-dots" id="quota-dots"></div>
+    </div>
+
+    <!-- Quota exceeded -->
+    <div class="quota-exceeded" id="quota-exceeded">
+        <h3>免費估價次數已用完</h3>
+        <p>您的 3 次免費估價已全部使用。訂閱方案後可享無限次估價與發布需求功能。</p>
+        <a href="#">查看訂閱方案</a>
+    </div>
 
     <!-- 工件表格 -->
     <div class="table-wrap" id="main-section">
@@ -157,7 +202,7 @@
         <button class="btn-new" onclick="startNew()">重新填寫</button>
     </div>
 
-</div>
+</div><!-- end main-container -->
 
 <!-- Modal -->
 <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
@@ -405,9 +450,7 @@ async function submitEstimate() {
 
     const items = collectItems();
     const payload = {
-        items,
-        contact,
-        deadline,
+        items, contact, deadline,
         region: document.getElementById('req-region').value,
         budget: parseFloat(document.getElementById('req-budget').value) || null,
         note:   document.getElementById('req-note').value,
@@ -419,18 +462,34 @@ async function submitEstimate() {
     try {
         const res = await fetch(`${API}/api/estimate/cnc`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify(payload)
         });
         const data = await res.json();
+
+        if (res.status === 402) {
+            closeModal();
+            document.getElementById('quota-exceeded').style.display = '';
+            document.getElementById('main-section').style.display = 'none';
+            document.querySelector('.btn-group').style.display = 'none';
+            return;
+        }
         if (!res.ok) { showError(data.detail || '發生錯誤，請稍後再試'); return; }
 
         closeModal();
         document.getElementById('main-section').style.display = 'none';
         document.querySelector('.btn-group').style.display = 'none';
-
         document.getElementById('result-price').textContent = '$' + data.grand_total.toLocaleString();
         document.getElementById('result-id').textContent = `需求編號：#${data.request_id}`;
+
+        // 更新次數顯示
+        if (data.remaining_estimates !== null && data.remaining_estimates !== undefined) {
+            updateQuotaBar(data.remaining_estimates, false);
+        }
+
         document.getElementById('result-screen').style.display = 'block';
 
     } catch(e) {
@@ -449,8 +508,61 @@ function startNew() {
     addItem();
 }
 
-// 初始化
-addItem();
+// ── 登入保護 + 次數檢查 ──
+const token = localStorage.getItem('ai_foundry_token');
+const currentUser = JSON.parse(localStorage.getItem('ai_foundry_user') || 'null');
+
+async function initPage() {
+    if (!token || !currentUser) {
+        document.getElementById('auth-wall').style.display = '';
+        return;
+    }
+    if (currentUser.role !== 'buyer') {
+        document.getElementById('auth-wall').style.display = '';
+        document.getElementById('auth-wall').querySelector('p').textContent =
+            '估價系統僅限需求端會員使用。';
+        return;
+    }
+
+    document.getElementById('main-container').style.display = '';
+
+    // 查詢剩餘次數
+    try {
+        const res = await fetch(`${API}/api/estimate/quota`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        updateQuotaBar(data.remaining, data.is_subscribed);
+    } catch(e) {
+        document.getElementById('quota-bar').style.display = 'none';
+    }
+
+    addItem();
+}
+
+function updateQuotaBar(remaining, isSubscribed) {
+    if (isSubscribed) {
+        document.getElementById('quota-bar').style.display = 'none';
+        return;
+    }
+    const total = 3;
+    const used = total - remaining;
+    document.getElementById('quota-text').textContent = `剩餘 ${remaining} / ${total} 次`;
+    const dots = document.getElementById('quota-dots');
+    dots.innerHTML = '';
+    for (let i = 0; i < total; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'quota-dot ' + (i < used ? 'used' : 'free');
+        dots.appendChild(dot);
+    }
+    if (remaining <= 0) {
+        document.getElementById('quota-exceeded').style.display = '';
+        document.getElementById('main-section').style.display = 'none';
+        document.querySelector('.btn-group').style.display = 'none';
+    }
+}
+
+initPage();
 </script>
 </body>
 </html>

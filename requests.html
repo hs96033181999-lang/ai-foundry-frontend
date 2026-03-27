@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>採購需求列表 — AI Foundry</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
+        :root { --red:#D12329; --navy:#1a2b49; --bg:#f4f6f9; }
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family:'Noto Sans TC',sans-serif; background:var(--bg); margin:0; color:#333; }
+
+        /* ── Topbar ── */
+        .topbar { background:var(--navy); color:white; padding:0 24px; height:56px; display:flex; align-items:center; justify-content:space-between; }
+        .topbar .logo { font-size:18px; font-weight:900; letter-spacing:-0.05em; text-decoration:none; color:white; }
+        .topbar .logo span { color:var(--red); }
+        .topbar-right { display:flex; align-items:center; gap:16px; font-size:12px; }
+        .user-badge { background:rgba(255,255,255,0.1); padding:4px 12px; border-radius:2px; font-size:11px; }
+
+        /* ── Main ── */
+        .main { max-width:1100px; margin:0 auto; padding:28px 24px; }
+
+        /* ── Page header ── */
+        .page-header { margin-bottom:24px; }
+        .page-header h1 { font-size:22px; font-weight:900; color:var(--navy); margin:0 0 4px; }
+        .page-header p { font-size:13px; color:#64748b; margin:0; }
+
+        /* ── Filter bar ── */
+        .filter-bar { background:white; border-radius:4px; padding:14px 20px; box-shadow:0 1px 4px rgba(0,0,0,0.07); margin-bottom:20px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+        .filter-label { font-size:11px; font-weight:bold; color:#94a3b8; letter-spacing:0.1em; text-transform:uppercase; }
+        .filter-btn { padding:6px 14px; border:1px solid #e2e8f0; border-radius:3px; font-size:12px; font-weight:bold; cursor:pointer; background:white; font-family:inherit; color:#64748b; transition:all 0.15s; }
+        .filter-btn.active { background:var(--navy); color:white; border-color:var(--navy); }
+        .filter-select { padding:7px 12px; border:1px solid #e2e8f0; border-radius:3px; font-size:12px; font-family:inherit; outline:none; color:#333; }
+        .filter-select:focus { border-color:var(--navy); }
+
+        /* ── Cards ── */
+        .cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px,1fr)); gap:16px; }
+
+        .card { background:white; border-radius:4px; box-shadow:0 1px 4px rgba(0,0,0,0.07); overflow:hidden; transition:box-shadow 0.15s, transform 0.15s; cursor:pointer; }
+        .card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.12); transform:translateY(-2px); }
+
+        .card-head { padding:14px 16px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; }
+        .card-id { font-size:11px; color:#94a3b8; font-weight:bold; }
+        .card-type { font-size:11px; font-weight:bold; padding:3px 10px; border-radius:12px; }
+        .type-cnc { background:#eff6ff; color:#3b82f6; }
+        .type-tin { background:#f0fdf4; color:#22c55e; }
+        .type-custom { background:#fdf4ff; color:#a855f7; }
+
+        .card-body { padding:16px; }
+        .card-price { font-size:24px; font-weight:900; color:var(--navy); margin-bottom:12px; }
+        .card-price span { font-size:13px; font-weight:normal; color:#94a3b8; }
+
+        .card-meta { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+        .meta-item { display:flex; flex-direction:column; gap:2px; }
+        .meta-label { font-size:10px; font-weight:bold; color:#94a3b8; letter-spacing:0.1em; text-transform:uppercase; }
+        .meta-value { font-size:13px; font-weight:bold; color:#1e293b; }
+
+        .card-note { font-size:12px; color:#64748b; background:#f8fafc; padding:8px 10px; border-radius:3px; margin-bottom:12px; line-height:1.5; }
+
+        .card-footer { display:flex; justify-content:space-between; align-items:center; }
+        .quote-count { font-size:11px; color:#94a3b8; }
+        .already-quoted { font-size:11px; font-weight:bold; color:#22c55e; }
+        .btn-quote { padding:7px 16px; background:var(--red); color:white; border:none; border-radius:3px; font-size:12px; font-weight:bold; cursor:pointer; font-family:inherit; }
+        .btn-quote:disabled { background:#94a3b8; cursor:not-allowed; }
+
+        .empty-state { text-align:center; padding:60px 20px; color:#94a3b8; }
+        .empty-state h3 { font-size:16px; margin:0 0 8px; }
+        .empty-state p { font-size:13px; margin:0; }
+
+        /* ── Modal ── */
+        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:1000; align-items:center; justify-content:center; }
+        .modal-overlay.open { display:flex; }
+        .modal { background:white; width:100%; max-width:560px; border-radius:4px; box-shadow:0 20px 60px rgba(0,0,0,0.25); overflow:hidden; max-height:90vh; display:flex; flex-direction:column; }
+        .modal-head { background:var(--navy); color:white; padding:18px 24px; display:flex; justify-content:space-between; align-items:flex-start; flex-shrink:0; }
+        .modal-head-info { display:flex; flex-direction:column; gap:4px; }
+        .modal-head-tag { font-size:10px; letter-spacing:0.2em; color:var(--red); font-weight:bold; }
+        .modal-head h2 { margin:0; font-size:17px; font-weight:700; }
+        .modal-close { background:none; border:none; color:white; font-size:22px; cursor:pointer; padding:0; line-height:1; flex-shrink:0; }
+        .modal-body { padding:20px 24px; overflow-y:auto; flex:1; }
+        .modal-footer { padding:14px 24px; border-top:1px solid #f1f5f9; flex-shrink:0; }
+
+        .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+        .detail-item { display:flex; flex-direction:column; gap:3px; }
+        .detail-item label { font-size:10px; font-weight:bold; color:#94a3b8; letter-spacing:0.1em; text-transform:uppercase; }
+        .detail-item span { font-size:13px; font-weight:bold; color:#1e293b; }
+        .detail-full { grid-column:1/-1; }
+
+        .items-section { margin-top:16px; }
+        .items-section h4 { font-size:12px; font-weight:bold; color:#94a3b8; letter-spacing:0.1em; text-transform:uppercase; margin:0 0 10px; }
+        .item-row { background:#f8fafc; border-radius:3px; padding:10px 12px; margin-bottom:6px; font-size:12px; color:#1e293b; }
+
+        .quote-form { margin-top:16px; border-top:1px solid #f1f5f9; padding-top:16px; }
+        .quote-form h4 { font-size:13px; font-weight:700; color:var(--navy); margin:0 0 12px; }
+        .form-field { margin-bottom:14px; }
+        .form-field label { display:block; font-size:10px; font-weight:bold; color:#94a3b8; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px; }
+        .form-field input, .form-field textarea {
+            width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:3px;
+            font-size:14px; font-family:inherit; outline:none; box-sizing:border-box;
+        }
+        .form-field textarea { resize:vertical; }
+        .form-field input:focus, .form-field textarea:focus { border-color:var(--navy); }
+
+        .error-msg { background:#fff0f0; border:1px solid #fecaca; color:var(--red); font-size:13px; padding:10px 14px; border-radius:3px; margin-bottom:14px; display:none; }
+        .error-msg.show { display:block; }
+        .success-msg { background:#f0fdf4; border:1px solid #bbf7d0; color:#15803d; font-size:13px; padding:10px 14px; border-radius:3px; margin-bottom:14px; display:none; }
+        .success-msg.show { display:block; }
+
+        .btn-submit-quote { width:100%; padding:12px; background:var(--red); color:white; border:none; border-radius:3px; font-size:14px; font-weight:bold; cursor:pointer; font-family:inherit; }
+        .btn-submit-quote:disabled { background:#94a3b8; cursor:not-allowed; }
+
+        .already-quoted-box { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:3px; padding:14px 16px; text-align:center; }
+        .already-quoted-box p { margin:0 0 4px; font-size:13px; font-weight:bold; color:#15803d; }
+        .already-quoted-box span { font-size:12px; color:#64748b; }
+
+        /* ── Auth wall ── */
+        .auth-wall { max-width:440px; margin:80px auto; background:white; border-radius:4px; box-shadow:0 2px 12px rgba(0,0,0,0.08); padding:40px; text-align:center; }
+        .auth-wall h2 { font-size:20px; font-weight:900; color:var(--navy); margin:0 0 8px; }
+        .auth-wall p { font-size:13px; color:#64748b; margin:0 0 24px; }
+        .auth-wall a { display:inline-block; padding:10px 28px; background:var(--navy); color:white; border-radius:3px; font-size:13px; font-weight:bold; text-decoration:none; }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <a href="ai-foundry.html" class="logo">AI <span>FOUNDRY</span></a>
+    <div class="topbar-right">
+        <span class="user-badge" id="user-badge">載入中...</span>
+        <a href="ai-foundry.html" style="color:white; font-size:12px; text-decoration:none;">← 返回主頁</a>
+    </div>
+</div>
+
+<!-- Auth wall（未登入或非供應商時顯示） -->
+<div id="auth-wall" style="display:none;">
+    <div class="auth-wall">
+        <h2>需要供應商身份</h2>
+        <p>此頁面僅限已審核的供應商會員查看。請登入您的供應商帳號。</p>
+        <a href="login.html">前往登入</a>
+    </div>
+</div>
+
+<!-- 主要內容 -->
+<div class="main" id="main-content" style="display:none;">
+    <div class="page-header">
+        <h1>採購需求列表</h1>
+        <p>以下為需求端發布的採購需求，您可以送出報價與需求方在平台上聯繫</p>
+    </div>
+
+    <div class="filter-bar">
+        <span class="filter-label">類型</span>
+        <button class="filter-btn active" onclick="setTypeFilter('', this)">全部</button>
+        <button class="filter-btn" onclick="setTypeFilter('cnc', this)">CNC 加工</button>
+        <button class="filter-btn" onclick="setTypeFilter('tin', this)">鐵皮屋</button>
+        <span class="filter-label" style="margin-left:8px;">地區</span>
+        <select class="filter-select" id="region-filter" onchange="loadRequests()">
+            <option value="">全部地區</option>
+            <option value="north">北部</option>
+            <option value="central">中部</option>
+            <option value="south">南部</option>
+            <option value="east">東部</option>
+        </select>
+        <button class="filter-btn" style="margin-left:auto;" onclick="loadRequests()">↻ 重新整理</button>
+    </div>
+
+    <div class="cards" id="cards-container">
+        <div class="empty-state"><h3>載入中...</h3></div>
+    </div>
+</div>
+
+<!-- 需求詳情 + 報價 Modal -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+        <div class="modal-head">
+            <div class="modal-head-info">
+                <div class="modal-head-tag" id="modal-tag">REQUEST</div>
+                <h2 id="modal-title">需求詳情</h2>
+            </div>
+            <button class="modal-close" onclick="closeModal()">×</button>
+        </div>
+        <div class="modal-body" id="modal-body"></div>
+    </div>
+</div>
+
+<script>
+const API = 'https://ai-foundry-backend-production.up.railway.app';
+let token = localStorage.getItem('ai_foundry_token');
+let currentUser = JSON.parse(localStorage.getItem('ai_foundry_user') || 'null');
+let currentTypeFilter = '';
+let currentRequestId = null;
+
+// ── 身份確認 ──
+function init() {
+    if (!token || !currentUser) {
+        document.getElementById('auth-wall').style.display = '';
+        return;
+    }
+    if (currentUser.role !== 'supplier') {
+        document.getElementById('auth-wall').style.display = '';
+        document.getElementById('auth-wall').querySelector('p').textContent =
+            '此頁面僅限供應商會員查看。';
+        return;
+    }
+    const name = currentUser.company_name || currentUser.owner_name || currentUser.email;
+    document.getElementById('user-badge').textContent = `👤 ${name}`;
+    document.getElementById('main-content').style.display = '';
+    loadRequests();
+}
+
+function setTypeFilter(type, btn) {
+    currentTypeFilter = type;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadRequests();
+}
+
+async function loadRequests() {
+    const region = document.getElementById('region-filter').value;
+    let url = `${API}/api/requests?`;
+    if (currentTypeFilter) url += `req_type=${currentTypeFilter}&`;
+    if (region) url += `region=${region}`;
+
+    try {
+        const res = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.status === 401 || res.status === 403) {
+            document.getElementById('main-content').style.display = 'none';
+            document.getElementById('auth-wall').style.display = '';
+            return;
+        }
+        const data = await res.json();
+        renderCards(data);
+    } catch(e) {
+        document.getElementById('cards-container').innerHTML =
+            '<div class="empty-state"><h3>載入失敗</h3><p>請確認網路連線後重試</p></div>';
+    }
+}
+
+const TYPE_LABEL = { cnc:'CNC 加工', tin:'鐵皮屋', custom:'客製化' };
+const TYPE_CLASS = { cnc:'type-cnc', tin:'type-tin', custom:'type-custom' };
+const REGION_LABEL = { all:'全台', north:'北部', central:'中部', south:'南部', east:'東部' };
+
+function renderCards(requests) {
+    const container = document.getElementById('cards-container');
+    if (!requests.length) {
+        container.innerHTML = '<div class="empty-state"><h3>目前沒有符合條件的需求</h3><p>請調整篩選條件或稍後再試</p></div>';
+        return;
+    }
+    container.innerHTML = requests.map(r => {
+        const typeLabel = TYPE_LABEL[r.req_type] || r.req_type;
+        const typeClass = TYPE_CLASS[r.req_type] || 'type-custom';
+        const regionLabel = REGION_LABEL[r.region] || r.region || '全台';
+        const date = r.deadline || '—';
+        const budget = r.budget ? `NT$ ${r.budget.toLocaleString()}` : '未指定';
+        const alreadyQuoted = !!r.my_quote_id;
+
+        return `
+        <div class="card" onclick="openModal(${r.id})">
+            <div class="card-head">
+                <span class="card-id">#${r.id} · ${new Date(r.created_at).toLocaleDateString('zh-TW')}</span>
+                <span class="card-type ${typeClass}">${typeLabel}</span>
+            </div>
+            <div class="card-body">
+                <div class="card-price">
+                    NT$ ${r.total_price ? Math.round(r.total_price).toLocaleString() : '—'}
+                    <span>系統估價</span>
+                </div>
+                <div class="card-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">截止日期</span>
+                        <span class="meta-value">${date}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">地區</span>
+                        <span class="meta-value">${regionLabel}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">預算上限</span>
+                        <span class="meta-value">${budget}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">已收報價</span>
+                        <span class="meta-value">${r.quote_count} 筆</span>
+                    </div>
+                </div>
+                ${r.note ? `<div class="card-note">${r.note}</div>` : ''}
+                <div class="card-footer">
+                    <span class="${alreadyQuoted ? 'already-quoted' : 'quote-count'}">
+                        ${alreadyQuoted ? '✓ 已送出報價' : `${r.quote_count} 筆報價`}
+                    </span>
+                    <button class="btn-quote" ${alreadyQuoted ? 'disabled' : ''}>
+                        ${alreadyQuoted ? '已報價' : '查看 / 報價'}
+                    </button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function openModal(requestId) {
+    currentRequestId = requestId;
+    document.getElementById('modal-body').innerHTML = '<div style="padding:20px; color:#94a3b8; text-align:center;">載入中...</div>';
+    document.getElementById('modal').classList.add('open');
+
+    try {
+        const res = await fetch(`${API}/api/requests/${requestId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const r = await res.json();
+        renderModal(r);
+    } catch(e) {
+        document.getElementById('modal-body').innerHTML = '<div style="padding:20px; color:red;">載入失敗</div>';
+    }
+}
+
+function renderModal(r) {
+    const typeLabel = TYPE_LABEL[r.req_type] || r.req_type;
+    const regionLabel = REGION_LABEL[r.region] || r.region || '全台';
+
+    document.getElementById('modal-tag').textContent = typeLabel.toUpperCase();
+    document.getElementById('modal-title').textContent = `需求 #${r.id}`;
+
+    // 工件/工程清單
+    let itemsHtml = '';
+    if (r.items && r.items.length) {
+        if (r.req_type === 'cnc') {
+            itemsHtml = r.items.map((item, i) => `
+                <div class="item-row">
+                    <strong>#${i+1} ${item.part_no || '工件'}</strong> ·
+                    材料：${item.material || '—'} ·
+                    加工：${item.machining || '無'} ·
+                    尺寸：${item.h||0} × ${item.w||0} × ${item.l||0} mm
+                </div>`).join('');
+        } else if (r.req_type === 'tin') {
+            itemsHtml = r.items.map((item, i) => `
+                <div class="item-row">
+                    <strong>#${i+1} ${item.name || '工程'}</strong> ·
+                    ${item.length}m × ${item.width}m × ${item.height}m ·
+                    屋型：${item.roof_type} ·
+                    板材：${item.material} ·
+                    數量：${item.qty}
+                </div>`).join('');
+        }
+    }
+
+    const alreadyQuoted = !!r.my_quote;
+    const quoteSection = alreadyQuoted ? `
+        <div class="already-quoted-box">
+            <p>✓ 您已送出報價</p>
+            <span>報價金額：NT$ ${r.my_quote.price.toLocaleString()} ／ 狀態：${r.my_quote.status === 'pending' ? '等待回應' : r.my_quote.status}</span>
+        </div>` : `
+        <div class="quote-form">
+            <h4>📩 送出報價</h4>
+            <div class="error-msg" id="quote-error"></div>
+            <div class="success-msg" id="quote-success"></div>
+            <div class="form-field">
+                <label>您的報價金額 (NT$)</label>
+                <input type="number" id="quote-price" placeholder="例：45000" min="1">
+            </div>
+            <div class="form-field">
+                <label>說明 / 備註</label>
+                <textarea id="quote-message" rows="3" placeholder="例：可在指定日期前完成、備有相關設備..."></textarea>
+            </div>
+            <button class="btn-submit-quote" id="btn-submit-quote" onclick="submitQuote()">確認送出報價</button>
+        </div>`;
+
+    document.getElementById('modal-body').innerHTML = `
+        <div class="detail-grid">
+            <div class="detail-item">
+                <label>系統估價</label>
+                <span style="color:var(--red); font-size:18px;">NT$ ${r.total_price ? Math.round(r.total_price).toLocaleString() : '—'}</span>
+            </div>
+            <div class="detail-item">
+                <label>截止日期</label>
+                <span>${r.deadline || '—'}</span>
+            </div>
+            <div class="detail-item">
+                <label>地區</label>
+                <span>${regionLabel}</span>
+            </div>
+            <div class="detail-item">
+                <label>預算上限</label>
+                <span>${r.budget ? 'NT$ ' + r.budget.toLocaleString() : '未指定'}</span>
+            </div>
+            ${r.note ? `<div class="detail-item detail-full"><label>需求備註</label><span>${r.note}</span></div>` : ''}
+        </div>
+        <div class="items-section">
+            <h4>工件 / 工程清單</h4>
+            ${itemsHtml || '<div style="color:#94a3b8; font-size:13px;">無詳細資料</div>'}
+        </div>
+        ${quoteSection}
+    `;
+}
+
+async function submitQuote() {
+    const price   = parseFloat(document.getElementById('quote-price')?.value);
+    const message = document.getElementById('quote-message')?.value || '';
+    const errEl   = document.getElementById('quote-error');
+    const sucEl   = document.getElementById('quote-success');
+
+    errEl.classList.remove('show');
+    sucEl.classList.remove('show');
+
+    if (!price || price <= 0) {
+        errEl.textContent = '請填寫有效的報價金額';
+        errEl.classList.add('show');
+        return;
+    }
+
+    const btn = document.getElementById('btn-submit-quote');
+    btn.disabled = true;
+    btn.textContent = '送出中...';
+
+    try {
+        const res = await fetch(`${API}/api/requests/${currentRequestId}/quote`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ price, message })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            errEl.textContent = data.detail || '送出失敗，請稍後再試';
+            errEl.classList.add('show');
+            btn.disabled = false;
+            btn.textContent = '確認送出報價';
+            return;
+        }
+        sucEl.textContent = `✓ 報價已送出！金額：NT$ ${price.toLocaleString()}`;
+        sucEl.classList.add('show');
+        btn.style.display = 'none';
+        // 更新卡片列表
+        setTimeout(() => { loadRequests(); }, 1000);
+    } catch(e) {
+        errEl.textContent = '連線失敗，請稍後再試';
+        errEl.classList.add('show');
+        btn.disabled = false;
+        btn.textContent = '確認送出報價';
+    }
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+    currentRequestId = null;
+}
+
+init();
+</script>
+</body>
+</html>
