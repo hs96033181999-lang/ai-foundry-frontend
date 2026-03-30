@@ -109,6 +109,22 @@
 
         .error-msg { background:#fff0f0; border:1px solid #fecaca; color:var(--red); font-size:13px; padding:10px 14px; border-radius:3px; display:none; }
         .error-msg.show { display:block; }
+
+        /* ── 孔加工 / 切削工序 sub-row ── */
+        .sub-row td { padding:10px 12px; background:#fafafa; border-top:1px dashed #e2e8f0; }
+        .sub-panels { display:flex; gap:12px; align-items:flex-start; }
+        .holes-panel { flex:0 0 220px; background:#d4edda; border:1px solid #c3e6cb; border-radius:4px; padding:10px; }
+        .cuts-panel  { flex:1; background:#e3f2fd; border:1px solid #b3d7ff; border-radius:4px; padding:10px; }
+        .panel-title { font-size:12px; font-weight:bold; margin-bottom:8px; border-bottom:1px dashed rgba(0,0,0,0.15); padding-bottom:5px; }
+        .hole-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+        .hole-item label { font-size:11px; color:#555; display:block; margin-bottom:2px; }
+        .hole-item input { width:100%; padding:4px 6px; border:1px solid #b8dac0; border-radius:3px; font-size:12px; text-align:right; outline:none; }
+        .cuts-table { width:100%; border-collapse:collapse; font-size:11px; }
+        .cuts-table th { background:#1a2b49; color:white; padding:5px 6px; text-align:center; }
+        .cuts-table td { padding:3px 4px; text-align:center; border-bottom:1px solid #d0e8ff; }
+        .cuts-table td input { width:100%; padding:3px 4px; border:1px solid #b3d7ff; border-radius:2px; font-size:11px; text-align:right; outline:none; }
+        .btn-add-cut { margin-top:6px; padding:4px 10px; background:#1a2b49; color:white; border:none; border-radius:3px; font-size:11px; cursor:pointer; }
+        .btn-del-cut { background:none; border:none; color:#D12329; cursor:pointer; font-size:14px; padding:0 2px; }
     </style>
 </head>
 <body>
@@ -169,13 +185,14 @@
                     <tr>
                         <th width="3%">#</th>
                         <th width="7%">形狀</th>
-                        <th width="10%">件號</th>
-                        <th width="13%">材料</th>
-                        <th width="14%">加工方式</th>
-                        <th width="14%">表面處理</th>
-                        <th width="7%">厚H(mm)</th>
-                        <th width="7%">寬W(mm)</th>
-                        <th width="7%">長L(mm)</th>
+                        <th width="10%">案件名稱</th>
+                        <th width="12%">材料</th>
+                        <th width="13%">加工方式</th>
+                        <th width="13%">表面處理</th>
+                        <th width="6%">厚H(mm)</th>
+                        <th width="6%">寬W(mm)</th>
+                        <th width="6%">長L(mm)</th>
+                        <th width="5%">數量</th>
                         <th width="5%">刪除</th>
                     </tr>
                 </thead>
@@ -184,9 +201,17 @@
         </div>
     </div>
 
-    <div class="btn-group">
+    <div class="btn-group" id="btn-group">
         <button class="btn btn-back" onclick="window.location.href='../ai-foundry.html'">← 返回選單</button>
-        <button class="btn-submit" onclick="openModal()">📢 取得報價並發布需求</button>
+        <button class="btn-submit" id="btn-calculate" onclick="runCalculate()">🔍 計算估價</button>
+        <button class="btn-submit" id="btn-publish" onclick="openModal()" style="display:none; background:#1a2b49;">📢 發布需求</button>
+    </div>
+
+    <!-- 估價結果列 -->
+    <div id="estimate-result-bar" style="display:none; background:white; border-radius:4px; box-shadow:0 1px 6px rgba(0,0,0,0.07); padding:16px 24px; margin-bottom:20px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+        <div style="font-size:13px; color:#64748b;">系統估算參考價格</div>
+        <div style="font-size:32px; font-weight:900; color:#D12329;" id="calc-result-price">$0</div>
+        <div style="font-size:11px; color:#94a3b8;">實際報價以供應商為準</div>
     </div>
 
     <!-- Result -->
@@ -245,7 +270,7 @@
         </div>
         <div class="modal-footer">
             <button class="btn-cancel" onclick="closeModal()">取消</button>
-            <button class="btn-confirm" id="btn-confirm" onclick="submitEstimate()">確認發布並取得報價</button>
+            <button class="btn-confirm" id="btn-confirm" onclick="submitPublish()">確認發布需求</button>
         </div>
     </div>
 </div>
@@ -327,6 +352,8 @@ function buildMatOptions(shape) {
 function addItem() {
     itemCount++;
     const tbody = document.getElementById('item-tbody');
+
+    // Main row
     const tr = document.createElement('tr');
     tr.id = `row-${itemCount}`;
     tr.innerHTML = `
@@ -335,18 +362,53 @@ function addItem() {
             <option value="block">板材</option>
             <option value="round">圓棒</option>
         </select></td>
-        <td><input type="text" placeholder="件號"></td>
+        <td><input type="text" placeholder="案件名稱"></td>
         <td><select id="mat-${itemCount}" onchange="onMatChange(this,${itemCount})">${buildMatOptions('block')}</select></td>
         <td id="mach-cell-${itemCount}"></td>
         <td id="surf-cell-${itemCount}"></td>
         <td><input type="number" id="h-${itemCount}" placeholder="厚" min="0"></td>
         <td><input type="number" id="w-${itemCount}" placeholder="寬" min="0"></td>
         <td><input type="number" id="l-${itemCount}" placeholder="長" min="0"></td>
+        <td><input type="number" id="qty-${itemCount}" value="1" min="1" style="width:50px; text-align:center;"></td>
         <td><button class="btn-del" onclick="delItem(${itemCount})">×</button></td>
     `;
     tbody.appendChild(tr);
+
+    // Sub row（孔加工 + 切削工序）
+    const subTr = document.createElement('tr');
+    subTr.id = `sub-${itemCount}`;
+    subTr.className = 'sub-row';
+    subTr.innerHTML = `
+        <td colspan="11">
+            <div class="sub-panels">
+                <div class="holes-panel">
+                    <div class="panel-title">🕳️ 孔加工</div>
+                    <div class="hole-grid">
+                        <div class="hole-item"><label>牙孔</label><input type="number" id="tap-${itemCount}" placeholder="0" min="0"></div>
+                        <div class="hole-item"><label>沉頭</label><input type="number" id="cb-${itemCount}"  placeholder="0" min="0"></div>
+                        <div class="hole-item"><label>鑽孔</label><input type="number" id="drill-${itemCount}" placeholder="0" min="0"></div>
+                        <div class="hole-item"><label>Pin孔</label><input type="number" id="pin-${itemCount}" placeholder="0" min="0"></div>
+                    </div>
+                </div>
+                <div class="cuts-panel">
+                    <div class="panel-title">⏱️ 切削工序</div>
+                    <table class="cuts-table">
+                        <thead><tr>
+                            <th>長L</th><th>寬W</th><th>深H</th><th>刀D</th>
+                            <th>吃%</th><th>每刀Z</th><th>進給F</th><th>數量</th><th>刪</th>
+                        </tr></thead>
+                        <tbody id="cuts-${itemCount}"></tbody>
+                    </table>
+                    <button class="btn-add-cut" onclick="addCutRow(${itemCount})">+ 新增切削區域</button>
+                </div>
+            </div>
+        </td>
+    `;
+    tbody.appendChild(subTr);
+
     refreshMach(itemCount);
     refreshSurf(itemCount);
+    addCutRow(itemCount);
 }
 
 function onShapeChange(sel, id) {
@@ -399,10 +461,29 @@ function toggleExcl(el) {
 
 function delItem(id) {
     document.getElementById(`row-${id}`)?.remove();
+    document.getElementById(`sub-${id}`)?.remove();
+}
+
+function addCutRow(itemId) {
+    const tbody = document.getElementById(`cuts-${itemId}`);
+    if (!tbody) return;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td><input type="number" placeholder="L" min="0"></td>
+        <td><input type="number" placeholder="W" min="0"></td>
+        <td><input type="number" placeholder="H" min="0"></td>
+        <td><input type="number" value="10" min="0"></td>
+        <td><input type="number" value="80" min="0"></td>
+        <td><input type="number" value="2"  min="0"></td>
+        <td><input type="number" value="1200" min="0"></td>
+        <td><input type="number" value="1" min="1"></td>
+        <td><button class="btn-del-cut" onclick="this.closest('tr').remove()">×</button></td>
+    `;
+    tbody.appendChild(tr);
 }
 
 function collectItems() {
-    const rows = document.querySelectorAll('#item-tbody tr');
+    const rows = document.querySelectorAll('#item-tbody tr:not(.sub-row)');
     const items = [];
     for (const row of rows) {
         const id = row.id.replace('row-', '');
@@ -414,8 +495,36 @@ function collectItems() {
         const h = parseFloat(document.getElementById(`h-${id}`)?.value) || 0;
         const w = parseFloat(document.getElementById(`w-${id}`)?.value) || 0;
         const l = parseFloat(document.getElementById(`l-${id}`)?.value) || 0;
+        const qty = parseInt(document.getElementById(`qty-${id}`)?.value) || 1;
         if (!matVal) continue;
-        items.push({ part_no:partNo, shape, material:matVal, machining:machVal, surface:surfChecked, h, w, l });
+
+        // 孔加工
+        const holes = {
+            tap:   parseInt(document.getElementById(`tap-${id}`)?.value)   || 0,
+            cb:    parseInt(document.getElementById(`cb-${id}`)?.value)    || 0,
+            drill: parseInt(document.getElementById(`drill-${id}`)?.value) || 0,
+            pin:   parseInt(document.getElementById(`pin-${id}`)?.value)   || 0,
+        };
+
+        // 切削工序
+        const cuts = [];
+        document.querySelectorAll(`#cuts-${id} tr`).forEach(tr => {
+            const inputs = tr.querySelectorAll('input[type=number]');
+            if (inputs.length >= 8) {
+                cuts.push({
+                    L: parseFloat(inputs[0].value)||0,
+                    W: parseFloat(inputs[1].value)||0,
+                    H: parseFloat(inputs[2].value)||0,
+                    D: parseFloat(inputs[3].value)||10,
+                    step: parseFloat(inputs[4].value)||80,
+                    z: parseFloat(inputs[5].value)||2,
+                    feed: parseFloat(inputs[6].value)||1200,
+                    qty: parseInt(inputs[7].value)||1,
+                });
+            }
+        });
+
+        items.push({ part_no:partNo, shape, material:matVal, machining:machVal, surface:surfChecked, h, w, l, qty, holes, cuts });
     }
     return items;
 }
@@ -442,69 +551,128 @@ function showError(msg) {
     el.textContent = msg; el.classList.add('show');
 }
 
-async function submitEstimate() {
-    const contact  = document.getElementById('req-contact').value.trim();
-    const deadline = document.getElementById('req-date').value;
-    if (!contact)  { showError('請填寫聯絡方式'); return; }
-    if (!deadline) { showError('請選擇期望完成時間'); return; }
+// ── 狀態暫存 ──
+let lastItems = null;
+let lastGrandTotal = 0;
 
+// ── 計算估價（commit: false，不扣額度）──
+async function runCalculate() {
     const items = collectItems();
-    const payload = {
-        items, contact, deadline,
-        region: document.getElementById('req-region').value,
-        budget: parseFloat(document.getElementById('req-budget').value) || null,
-        note:   document.getElementById('req-note').value,
-    };
+    if (!items.length) { alert('請至少新增一個工件'); return; }
+    for (const item of items) {
+        if ((item.shape==='block' && (!item.h||!item.w||!item.l)) ||
+            (item.shape==='round' && (!item.w||!item.l))) {
+            alert('請填寫所有工件的尺寸'); return;
+        }
+    }
 
-    const btn = document.getElementById('btn-confirm');
+    const btn = document.getElementById('btn-calculate');
     btn.disabled = true; btn.textContent = '計算中...';
 
     try {
         const res = await fetch(`${API}/api/estimate/cnc`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(payload)
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ items, commit: false })
         });
         const data = await res.json();
 
         if (res.status === 402) {
-            closeModal();
-            document.getElementById('quota-exceeded').style.display = '';
-            document.getElementById('main-section').style.display = 'none';
-            document.querySelector('.btn-group').style.display = 'none';
-            return;
+            showQuotaExceeded(); return;
         }
-        if (!res.ok) { showError(data.detail || '發生錯誤，請稍後再試'); return; }
+        if (!res.ok) { alert(data.detail || '計算失敗，請稍後再試'); return; }
 
-        closeModal();
-        document.getElementById('main-section').style.display = 'none';
-        document.querySelector('.btn-group').style.display = 'none';
-        document.getElementById('result-price').textContent = '$' + data.grand_total.toLocaleString();
-        document.getElementById('result-id').textContent = `需求編號：#${data.request_id}`;
+        // 暫存計算結果
+        lastItems = items;
+        lastGrandTotal = data.grand_total;
 
-        // 更新次數顯示
+        // 顯示金額列
+        const bar = document.getElementById('estimate-result-bar');
+        bar.style.display = 'flex';
+        document.getElementById('calc-result-price').textContent = '$' + data.grand_total.toLocaleString();
+
+        // 顯示「發布需求」按鈕
+        document.getElementById('btn-publish').style.display = '';
+        btn.textContent = '🔍 重新計算';
+
+    } catch(e) {
+        alert('連線失敗，請確認網路後再試');
+    } finally {
+        btn.disabled = false;
+        if (btn.textContent === '計算中...') btn.textContent = '🔍 計算估價';
+    }
+}
+
+// ── 發布需求（commit: true，扣額度 + 寫DB）──
+async function submitPublish() {
+    const contact  = document.getElementById('req-contact').value.trim();
+    const deadline = document.getElementById('req-date').value;
+    if (!contact)  { showError('請填寫聯絡方式'); return; }
+    if (!deadline) { showError('請選擇期望完成時間'); return; }
+    if (!lastItems) { showError('請先計算估價'); return; }
+
+    const btn = document.getElementById('btn-confirm');
+    btn.disabled = true; btn.textContent = '發布中...';
+
+    try {
+        const res = await fetch(`${API}/api/estimate/cnc`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                items:    lastItems,
+                commit:   true,
+                contact,
+                deadline,
+                region: document.getElementById('req-region').value,
+                budget: parseFloat(document.getElementById('req-budget').value) || null,
+                note:   document.getElementById('req-note').value,
+            })
+        });
+        const data = await res.json();
+
+        if (res.status === 402) {
+            closeModal(); showQuotaExceeded(); return;
+        }
+        if (!res.ok) { showError(data.detail || '發布失敗，請稍後再試'); return; }
+
+        // 更新額度顯示
         if (data.remaining_estimates !== null && data.remaining_estimates !== undefined) {
             updateQuotaBar(data.remaining_estimates, false);
         }
 
+        closeModal();
+        document.getElementById('main-section').style.display = 'none';
+        document.getElementById('btn-group').style.display = 'none';
+        document.getElementById('estimate-result-bar').style.display = 'none';
+        document.getElementById('result-price').textContent = '$' + lastGrandTotal.toLocaleString();
+        document.getElementById('result-id').textContent = `需求編號：#${data.request_id}`;
         document.getElementById('result-screen').style.display = 'block';
 
     } catch(e) {
         showError('連線失敗，請確認網路後再試');
     } finally {
-        btn.disabled = false; btn.textContent = '確認發布並取得報價';
+        btn.disabled = false; btn.textContent = '確認發布需求';
     }
+}
+
+function showQuotaExceeded() {
+    document.getElementById('quota-exceeded').style.display = '';
+    document.getElementById('main-section').style.display = 'none';
+    document.getElementById('btn-group').style.display = 'none';
+    document.getElementById('estimate-result-bar').style.display = 'none';
 }
 
 function startNew() {
     document.getElementById('item-tbody').innerHTML = '';
     itemCount = 0;
+    lastItems = null;
+    lastGrandTotal = 0;
     document.getElementById('main-section').style.display = '';
-    document.querySelector('.btn-group').style.display = '';
+    document.getElementById('btn-group').style.display = '';
     document.getElementById('result-screen').style.display = 'none';
+    document.getElementById('estimate-result-bar').style.display = 'none';
+    document.getElementById('btn-publish').style.display = 'none';
+    document.getElementById('btn-calculate').textContent = '🔍 計算估價';
     addItem();
 }
 
