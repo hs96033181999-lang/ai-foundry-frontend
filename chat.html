@@ -45,7 +45,7 @@
         .unread-badge { background:var(--red); color:white; font-size:10px; font-weight:bold; min-width:18px; height:18px; border-radius:9px; display:flex; align-items:center; justify-content:center; padding:0 4px; }
 
         /* Main chat */
-        .chat-main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+        .chat-main { flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative; }
         .chat-header { background:white; border-bottom:1px solid #e5e7eb; padding:14px 20px; display:flex; align-items:center; gap:14px; flex-shrink:0; }
         .chat-header-avatar { width:40px; height:40px; border-radius:50%; background:var(--navy); color:white; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:bold; }
         .chat-header-info h3 { margin:0; font-size:14px; font-weight:700; }
@@ -107,6 +107,111 @@
         .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#94a3b8; gap:12px; }
         .empty-state .icon { font-size:48px; }
         .empty-state p { font-size:14px; margin:0; }
+
+        /* ── AI 建議浮層 ── */
+        .ai-suggestion-panel {
+            position:absolute;
+            bottom:90px;
+            right:20px;
+            width:320px;
+            background:white;
+            border:1px solid #e2e8f0;
+            border-radius:12px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.12);
+            z-index:100;
+            overflow:hidden;
+            animation: slideUp 0.2s ease;
+            display:none;
+        }
+        @keyframes slideUp {
+            from { opacity:0; transform:translateY(10px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        .ai-panel-header {
+            background:linear-gradient(135deg, #1a2b49, #2d4a7a);
+            color:white;
+            padding:10px 14px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            font-size:12px;
+            font-weight:700;
+        }
+        .ai-panel-header .ai-label {
+            display:flex;
+            align-items:center;
+            gap:6px;
+        }
+        .ai-badge {
+            background:var(--red);
+            color:white;
+            font-size:9px;
+            font-weight:900;
+            padding:2px 6px;
+            border-radius:10px;
+            letter-spacing:0.05em;
+        }
+        .ai-close-btn {
+            background:none;
+            border:none;
+            color:rgba(255,255,255,0.7);
+            cursor:pointer;
+            font-size:16px;
+            padding:0;
+            line-height:1;
+        }
+        .ai-close-btn:hover { color:white; }
+        .ai-panel-body { padding:12px; display:flex; flex-direction:column; gap:8px; }
+        .ai-loading {
+            display:flex;
+            align-items:center;
+            gap:8px;
+            padding:8px;
+            color:#94a3b8;
+            font-size:12px;
+        }
+        .ai-spinner {
+            width:16px;
+            height:16px;
+            border:2px solid #e2e8f0;
+            border-top-color:var(--navy);
+            border-radius:50%;
+            animation:spin 0.7s linear infinite;
+            flex-shrink:0;
+        }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .ai-suggestion-btn {
+            background:#f8fafc;
+            border:1px solid #e2e8f0;
+            border-radius:8px;
+            padding:10px 12px;
+            font-size:12px;
+            font-family:inherit;
+            color:#1e293b;
+            cursor:pointer;
+            text-align:left;
+            line-height:1.5;
+            transition:all 0.15s;
+            display:flex;
+            align-items:flex-start;
+            gap:8px;
+        }
+        .ai-suggestion-btn:hover {
+            background:#fff0f0;
+            border-color:var(--red);
+            color:var(--navy);
+        }
+        .ai-suggestion-btn .sug-icon {
+            font-size:14px;
+            flex-shrink:0;
+            margin-top:1px;
+        }
+        .ai-trigger-hint {
+            font-size:10px;
+            color:#94a3b8;
+            text-align:center;
+            padding:4px 0 2px;
+        }
     </style>
 </head>
 <body>
@@ -124,7 +229,7 @@
 
 <div class="chat-layout">
 
-    <!-- Sidebar: conversation list -->
+    <!-- Sidebar -->
     <div class="sidebar">
         <div class="sidebar-header">
             <h2>💬 訊息中心</h2>
@@ -136,13 +241,13 @@
         <div class="conv-list" id="conv-list"></div>
     </div>
 
-    <!-- Main: chat window -->
+    <!-- Main chat -->
     <div class="chat-main" id="chat-main">
         <div class="empty-state" id="empty-state">
             <div class="icon">💬</div>
             <p>選擇一個對話開始溝通</p>
         </div>
-        <div id="chat-window" style="display:none; flex:1; flex-direction:column; overflow:hidden; display:none;">
+        <div id="chat-window" style="display:none; flex:1; flex-direction:column; overflow:hidden;">
             <div class="chat-header" id="chat-header"></div>
             <div class="messages" id="messages"></div>
             <div class="input-area">
@@ -157,12 +262,30 @@
                 </div>
             </div>
         </div>
+
+        <!-- AI 建議浮層 -->
+        <div class="ai-suggestion-panel" id="ai-panel">
+            <div class="ai-panel-header">
+                <div class="ai-label">
+                    🤖 AI 回覆建議
+                    <span class="ai-badge">BETA</span>
+                </div>
+                <button class="ai-close-btn" onclick="closeAiPanel()">✕</button>
+            </div>
+            <div class="ai-panel-body" id="ai-panel-body">
+                <div class="ai-loading" id="ai-loading">
+                    <div class="ai-spinner"></div>
+                    <span>AI 正在分析訊息...</span>
+                </div>
+            </div>
+        </div>
     </div>
 
 </div>
 
 <script>
-    /* ── Fake data ── */
+    const BACKEND = 'http://127.0.0.1:8000';
+
     const ME = { name:'我的工廠', initial:'我' };
 
     const CONVERSATIONS = [
@@ -234,12 +357,12 @@
         const conv = CONVERSATIONS.find(c => c.id === id);
         conv.unread = 0;
         conv.messages.forEach(m => m.read = true);
+        closeAiPanel();
 
         document.getElementById('empty-state').style.display = 'none';
         const win = document.getElementById('chat-window');
         win.style.display = 'flex';
 
-        // Header
         document.getElementById('chat-header').innerHTML = `
             <div class="chat-header-avatar">${conv.initial}</div>
             <div class="chat-header-info">
@@ -263,8 +386,6 @@
         let lastDate = '';
         conv.messages.forEach(m => {
             const isSelf = m.from === 'me';
-
-            // Date divider (simplified)
             const datePart = m.time.split(' ')[0] || '';
             if (datePart !== lastDate && datePart) {
                 lastDate = datePart;
@@ -336,21 +457,77 @@
         conv.lastMsg = text;
         conv.time = timeStr;
         input.value = '';
+        closeAiPanel();
 
         renderMessages(conv);
         renderSidebar();
 
-        // Simulate reply after 1.5s
+        // 模擬對方回覆，回覆後觸發 AI 建議
         setTimeout(() => {
-            conv.messages.push({ from:'other', text:'收到，我們稍後回覆您。', time:timeStr, read:false });
-            conv.lastMsg = '收到，我們稍後回覆您。';
+            const replyText = '收到，我們稍後回覆您。';
+            conv.messages.push({ from:'other', text:replyText, time:timeStr, read:false });
+            conv.lastMsg = replyText;
             conv.unread = 1;
             if (activeId === conv.id) {
                 conv.unread = 0;
                 renderMessages(conv);
+                // 觸發 AI 建議
+                fetchAiSuggestion(replyText);
             }
             renderSidebar();
         }, 1500);
+    }
+
+    /* ── AI 建議：呼叫後端 ── */
+    async function fetchAiSuggestion(incomingMessage) {
+        const panel = document.getElementById('ai-panel');
+        const body = document.getElementById('ai-panel-body');
+        const loading = document.getElementById('ai-loading');
+
+        // 顯示浮層 + loading
+        panel.style.display = 'block';
+        body.innerHTML = `<div class="ai-loading" id="ai-loading"><div class="ai-spinner"></div><span>AI 正在分析訊息...</span></div>`;
+
+        try {
+            const res = await fetch(`${BACKEND}/chat-ai/suggest-reply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: incomingMessage,
+                    role: 'buyer'
+                })
+            });
+
+            if (!res.ok) throw new Error('API 錯誤');
+            const data = await res.json();
+
+            body.innerHTML = `
+                <div class="ai-trigger-hint">點擊建議即可填入輸入框</div>
+                <button class="ai-suggestion-btn" onclick="applySuggestion(this)">
+                    <span class="sug-icon">💬</span>
+                    <span>${data.suggestion_1}</span>
+                </button>
+                <button class="ai-suggestion-btn" onclick="applySuggestion(this)">
+                    <span class="sug-icon">💬</span>
+                    <span>${data.suggestion_2}</span>
+                </button>`;
+        } catch (e) {
+            body.innerHTML = `<div class="ai-loading"><span style="color:#ef4444;">⚠ AI 建議暫時無法使用</span></div>`;
+            setTimeout(() => closeAiPanel(), 2000);
+        }
+    }
+
+    /* ── 套用 AI 建議到輸入框 ── */
+    function applySuggestion(btn) {
+        const text = btn.querySelector('span:last-child').textContent;
+        document.getElementById('msg-input').value = text;
+        document.getElementById('msg-input').focus();
+        closeAiPanel();
+    }
+
+    /* ── 關閉 AI 浮層 ── */
+    function closeAiPanel() {
+        document.getElementById('ai-panel').style.display = 'none';
     }
 
     function sendFile() {
